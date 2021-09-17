@@ -27,3 +27,5 @@ var/
 # Our configuration/data files
 .env
 *.sqlite
+*.sqlite-shm
+*.sqlite-wal
