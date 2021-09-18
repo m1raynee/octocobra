@@ -400,9 +400,9 @@ class Tags(commands.Cog):
         embed.timestamp = tag.created_at.replace(tzinfo=datetime.timezone.utc)
 
         if isinstance(tag, TagLookup):
-            await tag.original
+            original = await tag.original
             embed.set_footer(text='Alias created at')
-            embed.add_field(name='Original', value=tag.original.name)
+            embed.add_field(name='Original', value=original.name)
 
         elif isinstance(tag, TagTable):
             rank = await (TagTable
