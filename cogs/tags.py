@@ -8,33 +8,10 @@ from disnake import ui
 import disnake
 from tortoise.exceptions import IntegrityError
 
-from .utils import db
+from utils import db
+from .utils.db.tags import TagTable, TagLookup
 from .utils.helpers import safe_send_prepare
 
-class TagTable(db.Model):
-    id = db.IntField(pk=True)
-    name = db.CharField(50, unique=True)
-
-    content = db.TextField()
-    owner_id = db.BigIntField()
-    uses = db.IntField(default=0)
-    created_at = db.DatetimeField(auto_now_add=True)
-
-    aliases: db.ForeignKeyRelation['TagLookup']
-
-    class Meta:
-        table = 'tags'
-
-class TagLookup(db.Model):
-    id = db.IntField(pk=True)
-    name = db.CharField(50, unique=True)
-    original: TagTable = db.ForeignKeyField('tags.TagTable', 'aliases')
-
-    owner_id = db.BigIntField()
-    created_at = db.DatetimeField(auto_now_add=True)
-
-    class Meta:
-        table = 'tagslookup'
 
 class FakeUser(disnake.Object):
     avatar = None

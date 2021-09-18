@@ -1,8 +1,7 @@
 apps:
   tags:
     models:
-      # - __main__
-      - cogs.tags
+      - cogs.utils.db.tags
     default_connection: master
 connections:
   master:
