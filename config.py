@@ -11,6 +11,3 @@ class Config:
         return os.environ.get(name)
 
 sys.modules[__name__] = Config()
-
-# typings
-TOKEN: str
