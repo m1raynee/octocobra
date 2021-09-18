@@ -1,7 +1,7 @@
 import asyncio
-from dataclasses import FrozenInstanceError
+import datetime
 from os import name
-from typing import TYPE_CHECKING
+from typing import Union
 
 from disnake.ext import commands
 from disnake import ui
@@ -9,8 +9,7 @@ import disnake
 from tortoise.exceptions import IntegrityError
 
 from .utils import db
-from bot import DisnakeHelper
-
+from .utils.helpers import safe_send_prepare
 
 class TagTable(db.Model):
     id = db.IntField(pk=True)
@@ -29,7 +28,7 @@ class TagTable(db.Model):
 class TagLookup(db.Model):
     id = db.IntField(pk=True)
     name = db.CharField(50, unique=True)
-    original = db.ForeignKeyField('tags.TagTable', 'aliases')
+    original: TagTable = db.ForeignKeyField('tags.TagTable', 'aliases')
 
     owner_id = db.BigIntField()
     created_at = db.DatetimeField(auto_now_add=True)
@@ -37,10 +36,32 @@ class TagLookup(db.Model):
     class Meta:
         table = 'tagslookup'
 
+class FakeUser(disnake.Object):
+    avatar = None
+
+    @property
+    def display_name(self):
+        return str(self.id)
+
+    def __str__(self):
+        return str(self.id)
+
+class FakeMessage(disnake.Object):
+    "kinda hacky thing"
+    def __init__(self, inter: disnake.ApplicationCommandInteraction):
+        super().__init__(0)
+        data = inter.data
+        resolved = data.resolved
+
+        self.content = f"/{data.name} {' '.join([f'{k}: {v}' for k,v in data.options.items()])}"
+        self.mentions = [*resolved.members.values(), *resolved.users.values()]
+        self.role_mentions = list(resolved.roles.values())
+        inter.message = self
+
 class TagName(commands.clean_content):
     async def convert(self, ctx, argument: str) -> str:
         if not hasattr(ctx, 'message'):
-            ctx.message = FakeMessage(ctx)
+            FakeMessage(ctx)
         converted = await super().convert(ctx, argument)
         lower = converted.lower().strip()
 
@@ -52,49 +73,21 @@ class TagName(commands.clean_content):
 
         return lower
 
-class FakeUser(disnake.Object):
-    class FakeAsset:
-        url = 'https://cdn.discordapp.com/embed/avatars/0.png'
-
-        def __str__(self):
-            return self.url
-
-    @property
-    def avatar(self):
-        return self.FakeAsset()
-
-    @property
-    def display_name(self):
-        return str(self.id)
-
-    def __str__(self):
-        return str(self.id)
-
-class FakeMessage(disnake.Object):
-    def __init__(self, inter: disnake.ApplicationCommandInteraction):
-        super().__init__(0)
-        data = inter.data
-        self.content = f"/{data.name} {' '.join([f'{k}: {v}' for k,v in data.options.items()])}"
-    @property
-    def mentions(self):
-        return []
-    @property
-    def role_mentions(self):
-        return []
-
 class TagMember(commands.Converter):
-    async def convert(self, ctx, argument) -> disnake.Member:
+    async def convert(self, ctx, argument) -> Union[disnake.Member, FakeUser]:
+        if not hasattr(ctx, 'message'):
+            FakeMessage(ctx)
         try:
             return await commands.MemberConverter().convert(ctx, argument)
         except commands.BadArgument as e:
             if argument.isdigit():
                 return FakeUser(id=int(argument))
-            raise e
+            raise
 
 class CreateView(disnake.ui.View):
     message: disnake.Message
 
-    def __init__(self, bot: DisnakeHelper, init_interaction: disnake.Interaction, cog: 'Tags'):
+    def __init__(self, bot: commands.Bot, init_interaction: disnake.Interaction, cog: 'Tags'):
         super().__init__(timeout=60)
         self.bot = bot
         self.init_interaction = init_interaction
@@ -143,7 +136,7 @@ class CreateView(disnake.ui.View):
 
     async def interaction_check(self, interaction: disnake.Interaction) -> bool:
         if interaction.author != self.init_interaction.author:
-            await interaction.response.send_message('You\'re not an author of this View.')
+            await interaction.response.send_message('You\'re not an author of this View.', ephemeral=True)
             return False
         return True
 
@@ -250,10 +243,10 @@ class Tags(commands.Cog):
     """Commands to fetch something by a tag name"""
 
     def __init__(self, bot):
-        self.bot: DisnakeHelper = bot
+        self.bot: commands.Bot = bot
         self._reserved_tags_being_made = set()
 
-    async def get_tag(self, name: str) -> TagTable:
+    async def get_tag(self, name: str, original=True, only=('id', 'name', 'content')) -> Union[TagTable, TagLookup]:
         def not_found(rows):
             if rows is None or len(rows) == 0:
                 raise RuntimeError('Tag not found.')
@@ -263,23 +256,23 @@ class Tags(commands.Cog):
 
         tag = await (TagTable
             .filter(name=name)
-            .only('id', 'name', 'content')
+            .only(*only)
             .first()
         )
-        if not tag:
+        if tag is None:
             tag = await (TagLookup
                 .filter(name=name)
-                .prefetch_related('original')
                 .first()
             )
-            if not tag:
-                query = await (TagLookup
-                    .filter(name__contains=name)
-                    .limit(3)
-                    .only('name')
-                )
-                not_found(query)
-            tag = tag.original
+            if original and tag is not None:
+                tag = await tag.original
+        if tag is None:
+            query = await (TagLookup
+                .filter(name__contains=name)
+                .limit(3)
+                .only('name')
+            )
+            not_found(query)
 
         return tag
     
@@ -324,16 +317,33 @@ class Tags(commands.Cog):
     @tag.sub_command(
         name = 'show',
         description = 'Search for a tag',
-        options = [disnake.Option('name', 'Requested tag name', disnake.OptionType.string, True)]
+        options = [
+            disnake.Option('name', 'Requested tag name', disnake.OptionType.string, True),
+            disnake.Option(
+                'type', 
+                'Whether what content type will be shown', 
+                choices=[
+                    disnake.OptionChoice('Rich', 'rich'),
+                    disnake.OptionChoice('Raw', 'raw')
+                ]
+            )
+        ]
     )
-    async def tag_show(self, inter: disnake.ApplicationCommandInteraction, name):
+    async def tag_show(self, inter: disnake.ApplicationCommandInteraction, name, type=None):
         name = await TagName().convert(inter, name)
+
         try:
             tag = await self.get_tag(name)
         except RuntimeError as e:
             return await inter.response.send_message(e, ephemeral=True)
         
-        await inter.response.send_message(tag.content)
+        if type == 'raw':
+            first_step = disnake.utils.escape_markdown(tag.content)
+            kwargs = await safe_send_prepare(first_step.replace('<', '\\<'), escape_mentions=False)
+        else:
+            kwargs = dict(content=tag.content)
+
+        await inter.response.send_message(**kwargs)
         await (TagTable
             .filter(id=tag.id)
             .update(uses = db.F('uses') + 1)
@@ -343,7 +353,7 @@ class Tags(commands.Cog):
         name = 'create',
         description = 'Creates a new tag owned by you (interactive !!)',
     )
-    async def tag_create(self, inter: disnake.Interaction):
+    async def tag_create(self, inter: disnake.ApplicationCommandInteraction):
         view = CreateView(self.bot, inter, self)
         await inter.response.send_message(embed=view.prepare_embed(), view=view)
         view.message = await inter.original_message()
@@ -363,7 +373,7 @@ class Tags(commands.Cog):
             disnake.Option('old_name', 'Name of pre-existing tag.', disnake.OptionType.string, True)
         ]
     )
-    async def tag_alias(self, inter: disnake.Interaction, new_name, old_name):
+    async def tag_alias(self, inter: disnake.ApplicationCommandInteraction, new_name, old_name):
         converter = TagName()
         new_name = await converter.convert(inter, new_name)
         old_name = await converter.convert(inter, old_name)
@@ -373,8 +383,11 @@ class Tags(commands.Cog):
             .first()
             .prefetch_related('original')
         )
+        embed = disnake.Embed(color = 0x0084c7)
         if not tag_lookup:
-            return await inter.response.send_message(f'A tag with the name of "{old_name}" does not exist.')
+            embed.description = f'A tag with the name of "{old_name}" does not exist.'
+            return await inter.response.send_message(embed=embed,ephemeral=True)
+
         try:
             await TagLookup.create(
                 name = new_name,
@@ -382,10 +395,49 @@ class Tags(commands.Cog):
                 original = tag_lookup.original
             )
         except IntegrityError:
-            await inter.response.send_message('A tag with this name already exists.')
+            embed.description = 'A tag with this name already exists.'
         else:
-            await inter.response.send_message(f'Tag alias "{new_name}" that points to "{old_name}" successfully created.')
+            embed.description = f'Tag alias "{new_name}" that points to "{old_name}" successfully created.'
+        await inter.response.send_message(embed=embed)
 
+    @tag.sub_command(
+        name = 'info',
+        description = 'Shows an information about tag.',
+        options = [disnake.Option('name', 'Requested tag name', disnake.OptionType.string, True)]
+    )
+    async def tag_info(self, inter: disnake.ApplicationCommandInteraction, name):
+        name = await TagName().convert(inter, name)
+        tag = await self.get_tag(name, original=False, only=('id', 'name', 'owner_id', 'created_at', 'uses'))
+        author = self.bot.get_user(tag.owner_id) or (await self.bot.fetch_user(tag.owner_id))
+
+        embed = disnake.Embed(
+            title = tag.name,
+            color = 0x0084c7
+        ).set_author(
+            name = str(author),
+            icon_url = author.display_avatar.url
+        ).add_field(
+            name='Owner',
+            value=f'<@{tag.owner_id}>'
+        )
+        embed.timestamp = tag.created_at.replace(tzinfo=datetime.timezone.utc)
+
+        if isinstance(tag, TagLookup):
+            await tag.original
+            embed.set_footer(text='Alias created at')
+            embed.add_field(name='Original', value=tag.original.name)
+
+        elif isinstance(tag, TagTable):
+            rank = await (TagTable
+                .filter(uses__gt=tag.uses)
+                .count()
+            )
+            embed.set_footer(text='Tag created at')
+            embed.add_field(name='Uses', value=tag.uses)
+            embed.add_field(name='Rank', value=rank+1)
+            embed.add_field(name='ID', value=tag.id, inline=False)
+
+        await inter.response.send_message(embed=embed)
 
 def setup(bot):
     bot.add_cog(Tags(bot))

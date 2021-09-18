@@ -29,3 +29,4 @@ var/
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+/awskeys
