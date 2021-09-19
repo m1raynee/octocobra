@@ -1,3 +1,5 @@
+import aiohttp
+
 from disnake.ext import commands, tasks
 import disnake
 
@@ -35,6 +37,7 @@ class DisnakeHelper(commands.Bot):
                 print(f'Could not load extension {ext} due to {e.__class__.__name__}: {e}')
         
         self.loop.run_until_complete(db.init())
+        self.session = aiohttp.ClientSession(loop=self.loop)
 
     async def on_ready(self):
         print(f'Logged on as {self.user} (ID: {self.user.id})')
