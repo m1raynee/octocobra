@@ -6,7 +6,7 @@ from cogs.utils import db
 
 initial_extensions = (
     'cogs.tags',  # cogs
-    'cogs.docs'
+    'cogs.docs',
     'jishaku',  # community extensions
 )
 SLASH_COMMAND_GUILDS = (

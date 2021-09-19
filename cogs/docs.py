@@ -5,9 +5,8 @@ import zlib
 
 from disnake.ext import commands
 import disnake
+
 from .utils import fuzzy
-
-
 from bot import DisnakeHelper
 
 DOC_KEYS = {
