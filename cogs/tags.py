@@ -8,7 +8,7 @@ from disnake import ui
 import disnake
 from tortoise.exceptions import IntegrityError
 
-from utils import db
+from .utils.db import in_transaction, TransactionWrapper, F
 from .utils.db.tags import TagTable, TagLookup
 from .utils.helpers import safe_send_prepare
 
@@ -256,8 +256,8 @@ class Tags(commands.Cog):
     
     async def create_tag(self, inter: disnake.Interaction, name, content):
         name= name.lower()
-        async with db.in_transaction() as tr:
-            tr: db.TransactionWrapper
+        async with in_transaction() as tr:
+            tr: TransactionWrapper
             try:
                 tag = await TagTable.create(
                     name = name,
@@ -324,7 +324,7 @@ class Tags(commands.Cog):
         await inter.response.send_message(**kwargs)
         await (TagTable
             .filter(id=tag.id)
-            .update(uses = db.F('uses') + 1)
+            .update(uses = F('uses') + 1)
         )
     
     @tag.sub_command(
