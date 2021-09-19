@@ -53,6 +53,15 @@ class Docs(commands.Cog, name='Documentation'):
     def __init__(self, bot: DisnakeHelper):
         self.bot = bot
 
+    async def cog_slash_command_error(self, inter: disnake.ApplicationCommandInteraction, error: Exception) -> None:
+        if isinstance(error, RuntimeError):
+            if not inter.response.is_done():
+                return await inter.response.send_message(error, ephemeral=True)
+            else:
+                return await inter.followup.send(error, ephemeral=True)
+
+        return await super().cog_slash_command_error(inter, error)
+
     def parse_object_inv(self, stream: SphinxObjectFileReader, url: str):
         # key: URL
         # n.b.: key doesn't have `discord` or `discord.ext.commands` namespaces
