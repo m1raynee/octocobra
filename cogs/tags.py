@@ -240,9 +240,10 @@ class Tags(commands.Cog):
             tag = await (TagLookup
                 .filter(name=name)
                 .first()
+                .prefetch_related('original')
             )
             if original and tag is not None:
-                tag = await tag.original
+                tag = tag.original
         if tag is None:
             query = await (TagLookup
                 .filter(name__contains=name)
@@ -400,7 +401,6 @@ class Tags(commands.Cog):
         embed.timestamp = tag.created_at.replace(tzinfo=datetime.timezone.utc)
 
         if isinstance(tag, TagLookup):
-            await tag.fetch_related('original')
             embed.set_footer(text='Alias created at')
             embed.add_field(name='Original', value=tag.original.name)
 

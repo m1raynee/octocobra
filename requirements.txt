@@ -1,2 +1,3 @@
 git+https://github.com/EQUENOS/disnake
 tortoise-orm
+jishaku

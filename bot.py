@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 from disnake.ext import commands, tasks
 import disnake
 
@@ -7,11 +5,12 @@ import config
 from cogs.utils import db
 
 initial_extensions = (
-    'cogs.tags',
+    'cogs.tags',  # cogs
+    'jishaku',  # community extensions
 )
 SLASH_COMMAND_GUILDS = (
-    859290967475879966, # m1raynee's test
-    808030843078836254  # disnake
+    859290967475879966,  # m1raynee's test
+    808030843078836254,  # disnake
 )
 
 class DisnakeHelper(commands.Bot):
