@@ -12,11 +12,16 @@ SLASH_COMMAND_GUILDS = (
     859290967475879966,  # m1raynee's test
     808030843078836254,  # disnake
 )
+async def get_prefix(bot: 'DisnakeHelper', message): 
+    r = commands.when_mentioned(bot, message)
+    if message.author == bot.owner or message.author in bot.owners:
+        r.append('')
+    return r
 
 class DisnakeHelper(commands.Bot):
     def __init__(self, **kwargs):
         super().__init__(
-            command_prefix=commands.when_mentioned,
+            command_prefix=get_prefix,
             intents=disnake.Intents.all(),
             test_guilds=SLASH_COMMAND_GUILDS,
             **kwargs

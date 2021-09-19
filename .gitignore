@@ -24,9 +24,10 @@ var/
 .installed.cfg
 *.egg
 
-# Our configuration/data files
+# Our configuration/data/run files
 .env
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
 /awskeys
+run.sh
