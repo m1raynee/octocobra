@@ -131,7 +131,7 @@ class Docs(commands.Cog, name='Documentation'):
 
         self._cache = cache
     
-    async def do_rtfm(self, inter: disnake.ApplicationCommandInteraction, key, obj):
+    async def do_rtfm(self, inter: disnake.ApplicationCommandInteraction, key: str, obj):
         if not hasattr(self, '_cache'):
             await self.prepare_cache()
 
@@ -141,7 +141,7 @@ class Docs(commands.Cog, name='Documentation'):
 
         obj = re.sub(r'^(?:disnake\.(?:ext\.)?)?(?:commands\.)?(.+)', r'\1', obj)
 
-        if key.startswith('latest'):
+        if key.startswith(('latest', 'dpy-master')):
             # point the abc.Messageable types properly:
             q = obj.lower()
             for name in dir(disnake.abc.Messageable):
@@ -169,21 +169,21 @@ class Docs(commands.Cog, name='Documentation'):
         #     await ctx.db.execute(query, ctx.author.id)
 
     @commands.slash_command(
-        description='Gives you a documentation link for a disnake entity.',
+        description='Gives you a documentation link for a selected doc entity.',
         options=[
             disnake.Option('object', 'Requested object', disnake.OptionType.string, True),
             disnake.Option(
-                'language', 'Language key',
+                'docs', 'Documentation key',
                 choices=[
                     disnake.OptionChoice('disnake latest', 'latest'),
                     disnake.OptionChoice('Python 3.x', 'python'),
-                    disnake.OptionChoice('Dislash.py', 'dislash'),
-                    disnake.OptionChoice('Discord.py master', 'dpy-master'),
+                    disnake.OptionChoice('dislash.py', 'dislash'),
+                    disnake.OptionChoice('discord.py master', 'dpy-master'),
                 ]
             ),
         ]
     )
-    async def docs(self, inter, object, language = None):
+    async def rtfm(self, inter, object, language = None):
         language = language or 'latest'
         await self.do_rtfm(inter, language, object)
 
