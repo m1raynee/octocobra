@@ -132,7 +132,7 @@ class Docs(commands.Cog, name='Documentation'):
         self._cache = cache
     
     async def do_rtfm(self, inter: disnake.ApplicationCommandInteraction, key, obj):
-        if hasattr(self, '_cache'):
+        if not hasattr(self, '_cache'):
             await self.prepare_cache()
 
         if obj is None:
