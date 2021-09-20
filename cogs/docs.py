@@ -11,7 +11,9 @@ from bot import DisnakeHelper
 
 DOC_KEYS = {
     'latest': 'https://disnake.readthedocs.io/en/latest/',
-    'python': 'https://docs.python.org/3'
+    'python': 'https://docs.python.org/3',
+    'dislash': 'https://dislashpy.readthedocs.io/en/latest/',
+    'dpy-master': 'http://discordpy.readthedocs.io/en/master/'
 }
 
 class SphinxObjectFileReader:
@@ -174,7 +176,9 @@ class Docs(commands.Cog, name='Documentation'):
                 'language', 'Language key',
                 choices=[
                     disnake.OptionChoice('disnake latest', 'latest'),
-                    disnake.OptionChoice('Python 3.x', 'python')
+                    disnake.OptionChoice('Python 3.x', 'python'),
+                    disnake.OptionChoice('Dislash.py', 'dislash'),
+                    disnake.OptionChoice('Discord.py master', 'dpy-master'),
                 ]
             ),
         ]
