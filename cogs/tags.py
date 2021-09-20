@@ -1,11 +1,12 @@
 import asyncio
 import datetime
 from os import name
-from typing import Union
+from typing import List, Union
 
 from disnake.ext import commands
 from disnake import ui
 import disnake
+# from discord.ext import menus
 from tortoise.exceptions import IntegrityError
 
 from .utils.db import in_transaction, TransactionWrapper, F
@@ -65,7 +66,7 @@ class CreateView(disnake.ui.View):
     message: disnake.Message
 
     def __init__(self, bot: commands.Bot, init_interaction: disnake.Interaction, cog: 'Tags'):
-        super().__init__(timeout=60)
+        super().__init__(timeout=300)
         self.bot = bot
         self.init_interaction = init_interaction
         self.cog = cog
@@ -200,7 +201,7 @@ class CreateView(disnake.ui.View):
     )
     async def abort_button(self, button: disnake.Button, interaction: disnake.Interaction):
         self.cog.remove_in_progress_tag(name)
-        await interaction.response.edit_message(content='Tag creation aborted o/', view=ui.View(), embed=None)
+        await interaction.response.edit_message(content='Tag creation aborted o/', view=None, embed=None)
         self.stop()
 
     async def on_error(self, error: Exception, item, interaction: disnake.Interaction) -> None:
@@ -211,10 +212,17 @@ class CreateView(disnake.ui.View):
                 method = interaction.response.edit_message
             if self.name is not None:
                 self.cog.remove_in_progress_tag(self.name)
-            await method(content='You took too long. Goodbye.', view=ui.View(), embed=None)
+            await method(content='You took too long. Goodbye.', view=None, embed=None)
             return self.stop()
         raise error
 
+# class TagSource(menus.PageSource):
+#     def __init__(self, rows: List[TagLookup]) -> None:
+#         super().__init__()
+#         self.rows = rows
+    
+#     async def get_page(self, page_number):
+#         return await super().get_page(page_number)
 
 class Tags(commands.Cog):
     """Commands to fetch something by a tag name"""
@@ -337,9 +345,11 @@ class Tags(commands.Cog):
         view.message = await inter.original_message()
 
         if await view.wait():
-            return await view.message.edit(content='You took too long. Goodbye.', view=ui.View(), embed=None)
+            if view.name is not None:
+                self.remove_in_progress_tag(view.name)
+            return await view.message.edit(content='You took too long. Goodbye.', view=None, embed=None)
         else:
-            await view.message.edit(view=ui.View())
+            await view.message.edit(view=None)
         if hasattr(view, 'last_interaction'):
             await self.create_tag(view.last_interaction, view.name, view.content)
 
@@ -403,6 +413,7 @@ class Tags(commands.Cog):
         if isinstance(tag, TagLookup):
             embed.set_footer(text='Alias created at')
             embed.add_field(name='Original', value=tag.original.name)
+            embed.add_field(name='Lookup ID', value=tag.id, inline=False)
 
         elif isinstance(tag, TagTable):
             rank = await (TagTable
@@ -415,6 +426,17 @@ class Tags(commands.Cog):
             embed.add_field(name='ID', value=tag.id, inline=False)
 
         await inter.response.send_message(embed=embed)
+
+    # @tag.sub_command(
+    #     name = 'all',
+    #     description = 'Shows all existed tags'
+    # )
+    # async def tag_stats(self, inter: disnake.ApplicationCommandInteraction):
+    #     rows = await (TagLookup
+    #         .all()
+    #         .order_by('name')
+    #     )
+
 
 def setup(bot):
     bot.add_cog(Tags(bot))
