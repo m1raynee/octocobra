@@ -222,7 +222,7 @@ class CreateView(disnake.ui.View):
 class TagSource(paginator.BaseListSource):
     entries: List[TagLookup]
     def __init__(self, entries: List[TagLookup]):
-        super().__init__(entries, 20)
+        super().__init__(entries, per_page=20)
 
     async def format_page(self, view: paginator.PaginatorView, page: List[TagLookup]) -> Union[disnake.Embed, str, dict]:
         e = self.base_embed()
