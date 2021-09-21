@@ -106,7 +106,7 @@ class PaginatorView(disnake.ui.View):
             pass
 
     async def interaction_check(self, interaction: disnake.Interaction) -> bool:
-        if interaction.user and interaction.user in (self.ctx.bot.owner, self.ctx.author):
+        if interaction.user and interaction.user in (self.interaction.bot.owner, self.interaction.author):
             return True
         await interaction.response.send_message('This pagination menu cannot be controlled by you, sorry!', ephemeral=True)
         return False
@@ -123,14 +123,14 @@ class PaginatorView(disnake.ui.View):
 
     async def start(self) -> None:
         if self.check_embeds and not self.interaction.channel.permissions_for(self.interaction.me).embed_links:
-            await self.ctx.send('Bot does not have embed links permission in this channel.')
+            await self.interaction.response.send_message('Bot does not have embed links permission in this channel.', ephemeral=True)
             return
 
         await self.source._prepare_once()
         page = await self.source.get_page(0)
         kwargs = await self._get_kwargs_from_page(page)
         self._update_labels(0)
-        self.message = await self.ctx.send(**kwargs, view=self)
+        self.message = await self.interaction.response.send_message(**kwargs, view=self)
 
     @disnake.ui.button(label='≪', style=disnake.ButtonStyle.grey)
     async def go_to_first_page(self, button: disnake.ui.Button, interaction: disnake.Interaction):
