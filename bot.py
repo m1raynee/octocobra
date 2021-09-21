@@ -31,6 +31,7 @@ class DisnakeHelper(commands.Bot):
             test_guilds=SLASH_COMMAND_GUILDS,
             **kwargs
         )
+        self.startup = disnake.utils.utcnow()
 
         for ext in initial_extensions:
             try:
