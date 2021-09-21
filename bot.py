@@ -1,10 +1,12 @@
 import aiohttp
+import traceback
 
 from disnake.ext import commands, tasks
 import disnake
 
 import config
 from cogs.utils import db
+from cogs.utils.helpers import safe_send_prepare
 
 initial_extensions = (
     'cogs.tags',  # cogs
@@ -41,3 +43,16 @@ class DisnakeHelper(commands.Bot):
 
     async def on_ready(self):
         print(f'Logged on as {self.user} (ID: {self.user.id})')
+    
+    async def on_slash_command_error(self, interaction: disnake.ApplicationCommandInteraction, exception: commands.CommandError) -> None:
+        if not interaction.application_command.has_error_handler() or interaction.application_command.cog.has_slash_error_handler():
+            now = disnake.utils.utcnow().timestamp()
+            content = f'Unknown error happen. Contact m1raynee. Error timestamp: {now}'
+            if interaction.response.is_done():
+                await interaction.channel.send(content)
+            else:
+                await interaction.response.send_message(content, ephemeral=True)
+            await self.owner.send(f'{now}```py\n{interaction}\n```')
+            await self.owner.send(**safe_send_prepare(traceback.format_exception(type(exception), exception, exception.__traceback__)))
+        
+        # return await super().on_slash_command_error(interaction, exception)
