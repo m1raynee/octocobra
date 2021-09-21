@@ -2,7 +2,7 @@ import asyncio
 from typing import Dict, Optional, Any
 
 import disnake
-from discord.ext import menus
+from disnake.ext import menus
 
 class PaginatorView(disnake.ui.View):
     def __init__(

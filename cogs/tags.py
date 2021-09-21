@@ -3,7 +3,6 @@ import datetime
 from os import name
 from typing import Dict, Union, List
 
-from discord.ext import menus
 from disnake.ext import commands
 from disnake import ui
 import disnake
