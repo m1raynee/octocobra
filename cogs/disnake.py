@@ -48,18 +48,19 @@ class SphinxObjectFileReader:
                 buf = buf[pos + 1:]
                 pos = buf.find(b'\n')
 
-class Docs(commands.Cog, name='Documentation'):
-    """Documentaion things."""
+class Disnake(commands.Cog, name='disnake'):
+    """Docs and other disnake's guild things."""
 
     def __init__(self, bot: DisnakeHelper):
         self.bot = bot
 
     async def cog_slash_command_error(self, inter: disnake.ApplicationCommandInteraction, error: Exception) -> None:
         if isinstance(error, RuntimeError):
-            if not inter.response.is_done():
-                return await inter.response.send_message(error, ephemeral=True)
+            if inter.response.is_done():
+                m = inter.followup.send
             else:
-                return await inter.followup.send(error, ephemeral=True)
+                m = inter.response.send_message
+            return await m(error, ephemeral=True)
 
         return await super().cog_slash_command_error(inter, error)
 
@@ -186,6 +187,7 @@ class Docs(commands.Cog, name='Documentation'):
     async def rtfm(self, inter, object, language = None):
         language = language or 'latest'
         await self.do_rtfm(inter, language, object)
+    
 
 def setup(bot):
-    bot.add_cog(Docs(bot))
+    bot.add_cog(Disnake(bot))

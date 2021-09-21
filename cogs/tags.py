@@ -1,17 +1,18 @@
 import asyncio
 import datetime
 from os import name
-from typing import List, Union
+from typing import Dict, Union, List
 
+from discord.ext import menus
 from disnake.ext import commands
 from disnake import ui
 import disnake
-# from discord.ext import menus
 from tortoise.exceptions import IntegrityError
 
 from .utils.db import in_transaction, TransactionWrapper, F
 from .utils.db.tags import TagTable, TagLookup
 from .utils.helpers import safe_send_prepare
+from .utils import paginator
 
 
 class FakeUser(disnake.Object):
@@ -34,7 +35,7 @@ class FakeMessage(disnake.Object):
         self.content = f"/{data.name} {' '.join([f'{k}: {v}' for k,v in data.options.items()])}"
         self.mentions = [*resolved.members.values(), *resolved.users.values()]
         self.role_mentions = list(resolved.roles.values())
-        inter.message = self
+        inter.message = self  # insert message to interaction
 
 class TagName(commands.clean_content):
     async def convert(self, ctx, argument: str) -> str:
@@ -46,7 +47,7 @@ class TagName(commands.clean_content):
         if not lower:
             raise commands.BadArgument('Missing tag name.')
 
-        if len(lower) not in range(3, 51):
+        if len(lower) > 50:
             raise commands.BadArgument('Tag name must be in range from 3 to 50.')
 
         return lower
@@ -82,18 +83,21 @@ class CreateView(disnake.ui.View):
         return msg.channel == self.message.channel and msg.author == self.init_interaction.author
 
     def prepare_embed(self):
+        desc = (
+            'Press "Confirm" to end this shit\n'
+            'Press "Name" to make name, "Content" to make content\n'
+            'Press "Abort" to abort.'
+        )
+        if len(self.content) > 1024:
+            desc += '\n**Hint:** Tag content reached embed field limitation, this will not affect the content'
         return disnake.Embed(
             title='Tag creation',
-            description=(
-                'Press "Confirm" to end this shit\n'
-                'Press "Name" to make name, "Content" to make content\n'
-                'Press "Abort" to abort.'
-            ),
+            description=desc,
             color=0x0084c7
         ).add_field(
             name='Name', value=self.name, inline=False
         ).add_field(
-            name='Content', value=self.content, inline=False
+            name='Content', value=self.content[:1024], inline=False
         )
 
     def disable_all(self):
@@ -216,20 +220,26 @@ class CreateView(disnake.ui.View):
             return self.stop()
         raise error
 
-# class TagSource(menus.PageSource):
-#     def __init__(self, rows: List[TagLookup]) -> None:
-#         super().__init__()
-#         self.rows = rows
-    
-#     async def get_page(self, page_number):
-#         return await super().get_page(page_number)
+class TagSource(paginator.BaseListSource):
+    entries: List[TagLookup]
+    def __init__(self, entries: List[TagLookup]):
+        super().__init__(entries, 20)
+
+    async def format_page(self, view: paginator.PaginatorView, page: List[TagLookup]) -> Union[disnake.Embed, str, dict]:
+        e = self.base_embed()
+        e.description = '\n'.join([
+            f'{i}. {row.name} (id: {row.id})'
+            for i, row
+            in enumerate(page, view.current_page*self.per_page+1)
+        ])
+        return e
 
 class Tags(commands.Cog):
     """Commands to fetch something by a tag name"""
 
     def __init__(self, bot):
         self.bot: commands.Bot = bot
-        self._reserved_tags_being_made = set()
+        self._tags_being_made = set()
 
     async def get_tag(self, name: str, original=True, only=('id', 'name', 'content')) -> Union[TagTable, TagLookup]:
         def not_found(rows):
@@ -289,11 +299,11 @@ class Tags(commands.Cog):
                 await inter.followup.send(f'Tag {name} successfully created.')
 
     def is_tag_being_made(self, name):
-        return name.lower() in self._reserved_tags_being_made
+        return name.lower() in self._tags_being_made
     def add_in_progress_tag(self, name):
-        self._reserved_tags_being_made.add(name.lower())
+        self._tags_being_made.add(name.lower())
     def remove_in_progress_tag(self, name):
-        self._reserved_tags_being_made.discard(name.lower())
+        self._tags_being_made.discard(name.lower())
 
 
     @commands.slash_command(description='Tag sub-command group')
@@ -348,8 +358,8 @@ class Tags(commands.Cog):
             if view.name is not None:
                 self.remove_in_progress_tag(view.name)
             return await view.message.edit(content='You took too long. Goodbye.', view=None, embed=None)
-        else:
-            await view.message.edit(view=None)
+        
+        await view.message.edit(view=None)
         if hasattr(view, 'last_interaction'):
             await self.create_tag(view.last_interaction, view.name, view.content)
 
@@ -427,15 +437,18 @@ class Tags(commands.Cog):
 
         await inter.response.send_message(embed=embed)
 
-    # @tag.sub_command(
-    #     name = 'all',
-    #     description = 'Shows all existed tags'
-    # )
-    # async def tag_stats(self, inter: disnake.ApplicationCommandInteraction):
-    #     rows = await (TagLookup
-    #         .all()
-    #         .order_by('name')
-    #     )
+    @tag.sub_command(
+        name = 'all',
+        description = 'Shows all existed tags'
+    )
+    async def tag_stats(self, inter: disnake.ApplicationCommandInteraction):
+        rows = await (TagLookup
+            .all()
+            .order_by('name')
+        )
+        source = TagSource(rows)
+        view = paginator.PaginatorView(source, interaction=inter)
+        await view.start()
 
 
 def setup(bot):
