@@ -4,7 +4,6 @@ import traceback
 from disnake.ext import commands, tasks
 import disnake
 
-import config
 from cogs.utils import db
 from cogs.utils.helpers import safe_send_prepare
 

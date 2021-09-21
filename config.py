@@ -1,5 +1,4 @@
 import os
-import sys
 
 class Config:
     def __init__(self):
@@ -10,4 +9,4 @@ class Config:
     def __getattribute__(self, name: str):
         return os.environ.get(name)
 
-sys.modules[__name__] = Config()
+values = Config()
