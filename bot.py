@@ -23,6 +23,8 @@ async def get_prefix(bot: 'DisnakeHelper', message):
     return r
 
 class DisnakeHelper(commands.Bot):
+    dev_channel_ids = [889872309639315497, 808035299094691882]
+
     def __init__(self, **kwargs):
         super().__init__(
             command_prefix=get_prefix,
