@@ -18,7 +18,7 @@ SLASH_COMMAND_GUILDS = (
 )
 async def get_prefix(bot: 'DisnakeHelper', message): 
     r = commands.when_mentioned(bot, message)
-    if message.author == bot.owner or message.author in bot.owners:
+    if message.channel.id in bot.dev_channel_ids and (message.author == bot.owner or message.author in bot.owners):
         r.append('')
     return r
 
@@ -53,6 +53,6 @@ class DisnakeHelper(commands.Bot):
             else:
                 await interaction.response.send_message(content, ephemeral=True)
             await self.owner.send(f'{now}```py\n{interaction}\n```')
-            await self.owner.send(**safe_send_prepare(traceback.format_exception(type(exception), exception, exception.__traceback__)))
+            await self.owner.send(**(await safe_send_prepare(traceback.format_exception(type(exception), exception, exception.__traceback__))))
         
         # return await super().on_slash_command_error(interaction, exception)
