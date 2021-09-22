@@ -54,18 +54,15 @@ class DisnakeHelper(commands.Bot):
                 await interaction.followup.send(content, ephemeral=True)
             else:
                 await interaction.response.send_message(content, ephemeral=True)
-            try:
-                await self.owner.send(**(await safe_send_prepare(traceback.format_exception(type(exception), exception, exception.__traceback__))))
-            except Exception as e:
-                await self.owner.send(e)
-            finally:
-                await self.owner.send((
-                    '```py\n'
-                    f'{interaction.user = }\n'
-                    f'{interaction.channel.id = }\n'
-                    f'{interaction.application_command.name = }\n'
-                    f'{interaction.options = }\n'
-                    '```'
-                ))
+            tb = '\n'.join(traceback.format_exception(type(exception), exception, exception.__traceback__))
+            await self.owner.send(**(await safe_send_prepare(tb)))
+            await self.owner.send((
+                '```py\n'
+                f'{interaction.user = }\n'
+                f'{interaction.channel.id = }\n'
+                f'{interaction.application_command.name = }\n'
+                f'{interaction.options = }\n'
+                '```'
+            ))
         
         # return await super().on_slash_command_error(interaction, exception)
