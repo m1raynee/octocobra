@@ -51,10 +51,21 @@ class DisnakeHelper(commands.Bot):
             now = disnake.utils.utcnow().timestamp()
             content = f'Unknown error happen. Contact m1raynee. Error timestamp: {now}'
             if interaction.response.is_done():
-                await interaction.channel.send(content)
+                await interaction.followup.send(content, ephemeral=True)
             else:
                 await interaction.response.send_message(content, ephemeral=True)
-            await self.owner.send(f'{now}```py\n{interaction}\n```')
-            await self.owner.send(**(await safe_send_prepare(traceback.format_exception(type(exception), exception, exception.__traceback__))))
+            try:
+                await self.owner.send(**(await safe_send_prepare(traceback.format_exception(type(exception), exception, exception.__traceback__))))
+            except Exception as e:
+                await self.owner.send(e)
+            finally:
+                await self.owner.send((
+                    '```py\n'
+                    f'{interaction.user = }\n'
+                    f'{interaction.channel.id = }\n'
+                    f'{interaction.application_command.name = }\n'
+                    f'{interaction.options = }\n'
+                    '```'
+                ))
         
         # return await super().on_slash_command_error(interaction, exception)
