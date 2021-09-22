@@ -174,7 +174,7 @@ class Disnake(commands.Cog, name='disnake'):
         options=[
             disnake.Option('object', 'Requested object', disnake.OptionType.string, True),
             disnake.Option(
-                'docs', 'Documentation key',
+                'language', 'Documentation key',
                 choices=[
                     disnake.OptionChoice('disnake latest', 'latest'),
                     disnake.OptionChoice('Python 3.x', 'python'),
