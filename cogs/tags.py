@@ -87,7 +87,7 @@ class CreateView(disnake.ui.View):
             'Press "Name" to make name, "Content" to make content\n'
             'Press "Abort" to abort.'
         )
-        if str(self.content) > 1024:
+        if len(str(self.content)) > 1024:
             desc += '\n**Hint:** Tag content reached embed field limitation, this will not affect the content'
         return disnake.Embed(
             title='Tag creation',
