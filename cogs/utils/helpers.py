@@ -13,6 +13,9 @@ async def safe_send_prepare(content, *, escape_mentions=True, **kwargs):
     if len(content) > 2000:
         fp = io.BytesIO(content.encode())
         kwargs.pop('file', None)
-        return dict(file=disnake.File(fp, filename='message_too_long.txt'), **kwargs)
+        return {
+            'file': disnake.File(fp, filename='message_too_long.txt'),
+            **kwargs
+        }
     else:
-        return dict(content=content)
+        return {'content': content}
