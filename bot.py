@@ -55,7 +55,7 @@ class DisnakeHelper(commands.Bot):
             else:
                 await interaction.response.send_message(content, ephemeral=True)
             tb = '\n'.join(traceback.format_exception(type(exception), exception, exception.__traceback__))
-            await self.owner.send(**(await safe_send_prepare(tb)))
+            await self.owner.send(**(await safe_send_prepare(f'```py\n{tb}\n```')))
             await self.owner.send((
                 '```py\n'
                 f'{interaction.user = }\n'

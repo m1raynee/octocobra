@@ -87,7 +87,7 @@ class CreateView(disnake.ui.View):
             'Press "Name" to make name, "Content" to make content\n'
             'Press "Abort" to abort.'
         )
-        if self.content is not None and len(self.content) > 1024:
+        if str(self.content) > 1024:
             desc += '\n**Hint:** Tag content reached embed field limitation, this will not affect the content'
         return disnake.Embed(
             title='Tag creation',
@@ -96,7 +96,7 @@ class CreateView(disnake.ui.View):
         ).add_field(
             name='Name', value=self.name, inline=False
         ).add_field(
-            name='Content', value=self.content[:1024], inline=False
+            name='Content', value=str(self.content)[:1024], inline=False
         )
 
     def disable_all(self):
