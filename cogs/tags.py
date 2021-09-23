@@ -15,8 +15,10 @@ from .utils import paginator
 
 
 def tag_permission():
-    async def predicate(*args, **kwargs):
-        await args[0].bot.owner.send(f'```py\n{args}\n{kwargs}\n```')
+    async def predicate(inter: disnake.ApplicationCommandInteraction):
+        destenation = inter.bot.owner
+        
+        await destenation.send(inter.data.options)
         return True
     return commands.check(predicate)
 
