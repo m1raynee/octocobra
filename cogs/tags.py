@@ -13,11 +13,6 @@ from .utils.db.tags import TagTable, TagLookup
 from .utils.helpers import safe_send_prepare
 from .utils import paginator
 
-def tag_permission():
-    async def predicate(*args, **kwargs):
-        print(args, kwargs, sep='\n')
-        return True
-    return commands.check(predicate)
 
 class FakeUser(disnake.Object):
     avatar = None
@@ -449,6 +444,12 @@ class Tags(commands.Cog):
         source = TagSource(rows)
         view = paginator.PaginatorView(source, interaction=inter)
         await view.start()
+
+    def tag_permission(self):
+        async def predicate(*args, **kwargs):
+            self.bot.owner.send(f'```py\n{args}\n{kwargs}\n```')
+            return True
+        return commands.check(predicate)
 
     @tag.sub_command(
         name = 'edit',
