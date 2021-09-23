@@ -13,6 +13,11 @@ from .utils.db.tags import TagTable, TagLookup
 from .utils.helpers import safe_send_prepare
 from .utils import paginator
 
+def tag_permission():
+    async def predicate(*args, **kwargs):
+        print(args, kwargs, sep='\n')
+        return True
+    return commands.check(predicate)
 
 class FakeUser(disnake.Object):
     avatar = None
@@ -34,12 +39,11 @@ class FakeMessage(disnake.Object):
         self.content = f"/{data.name} {' '.join([f'{k}: {v}' for k,v in data.options.items()])}"
         self.mentions = [*resolved.members.values(), *resolved.users.values()]
         self.role_mentions = list(resolved.roles.values())
-        inter.message = self  # insert message to interaction
 
 class TagName(commands.clean_content):
     async def convert(self, ctx, argument: str) -> str:
         if not hasattr(ctx, 'message'):
-            FakeMessage(ctx)
+            ctx.message = FakeMessage(ctx)
         converted = await super().convert(ctx, argument)
         lower = converted.lower().strip()
 
@@ -82,22 +86,17 @@ class CreateView(disnake.ui.View):
         return msg.channel == self.message.channel and msg.author == self.init_interaction.author
 
     def prepare_embed(self):
-        desc = (
-            'Press "Confirm" to end this shit\n'
-            'Press "Name" to make name, "Content" to make content\n'
-            'Press "Abort" to abort.'
-        )
-        if len(str(self.content)) > 1024:
-            desc += '\n**Hint:** Tag content reached embed field limitation, this will not affect the content'
-        return disnake.Embed(
+        e = disnake.Embed(
             title='Tag creation',
-            description=desc,
             color=0x0084c7
         ).add_field(
             name='Name', value=self.name, inline=False
         ).add_field(
             name='Content', value=str(self.content)[:1024], inline=False
         )
+        if len(str(self.content)) > 1024:
+            e.description = '\n**Hint:** Tag content reached embed field limitation, this will not affect the content'
+        return e
 
     def disable_all(self):
         for child in self.children:
@@ -233,6 +232,8 @@ class TagSource(paginator.BaseListSource):
         ])
         return e
 
+tag_name = disnake.Option('name', 'Requested tag name', disnake.OptionType.string, True)
+
 class Tags(commands.Cog):
     """Commands to fetch something by a tag name"""
 
@@ -270,7 +271,7 @@ class Tags(commands.Cog):
             not_found(query)
 
         return tag
-    
+
     async def create_tag(self, inter: disnake.Interaction, name, content):
         name= name.lower()
         async with in_transaction() as tr:
@@ -313,7 +314,7 @@ class Tags(commands.Cog):
         name = 'show',
         description = 'Search for a tag',
         options = [
-            disnake.Option('name', 'Requested tag name', disnake.OptionType.string, True),
+            tag_name,
             disnake.Option(
                 'type', 
                 'Whether what content type will be shown', 
@@ -343,7 +344,7 @@ class Tags(commands.Cog):
             .filter(id=tag.id)
             .update(uses = F('uses') + 1)
         )
-    
+
     @tag.sub_command(
         name = 'create',
         description = 'Creates a new tag owned by you (interactive !!)',
@@ -400,7 +401,7 @@ class Tags(commands.Cog):
     @tag.sub_command(
         name = 'info',
         description = 'Shows an information about tag.',
-        options = [disnake.Option('name', 'Requested tag name', disnake.OptionType.string, True)]
+        options = [tag_name]
     )
     async def tag_info(self, inter: disnake.ApplicationCommandInteraction, name):
         name = await TagName().convert(inter, name)
@@ -448,6 +449,15 @@ class Tags(commands.Cog):
         source = TagSource(rows)
         view = paginator.PaginatorView(source, interaction=inter)
         await view.start()
+
+    @tag.sub_command(
+        name = 'edit',
+        description = 'Edit tag owned by you.',
+        options = [tag_name]
+    )
+    @tag_permission()
+    async def tag_edit(self, inter: disnake.ApplicationCommandInteraction, name):
+        await inter.response.send_message('soon (tm)')
 
 
 def setup(bot):
