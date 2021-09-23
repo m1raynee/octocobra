@@ -16,7 +16,7 @@ from .utils import paginator
 
 def tag_permission():
     async def predicate(*args, **kwargs):
-        args[0].bot.owner.send(f'```py\n{args}\n{kwargs}\n```')
+        await args[0].bot.owner.send(f'```py\n{args}\n{kwargs}\n```')
         return True
     return commands.check(predicate)
 
