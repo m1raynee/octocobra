@@ -1,4 +1,4 @@
-git+https://github.com/EQUENOS/disnake
+git+https://github.com/EQUENOS/disnake#egg=disnake[discord]
 git+https://github.com/m1raynee/disnake-ext-menus
 tortoise-orm
 jishaku
