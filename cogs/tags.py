@@ -289,13 +289,10 @@ class Tags(commands.Cog):
     ):
         """
         Search for a tag.
-
         Parameters
         ----------
-        name
-            Requested tag name
-        type
-            Whether what content type will be shown
+        name: Requested tag name
+        type: Whether what content type will be shown
         """
         try:
             tag = await self.get_tag(name)
@@ -342,13 +339,10 @@ class Tags(commands.Cog):
     ):
         """
         Creates an alias for a pre-existing tag.
-
         Parameters
         ----------
-        new_name
-            Alias name that will be created.
-        old_name
-            Name of pre-existing tag.
+        new_name: Alias name that will be created.
+        old_name: Name of pre-existing tag.
         """
         tag_lookup = await (TagLookup
             .filter(name=old_name)
@@ -380,11 +374,9 @@ class Tags(commands.Cog):
     ):
         """
         Shows an information about tag.
-
         Parameters
         ----------
-        name
-            Requested tag name
+        name: Requested tag name
         """
         tag = await self.get_tag(name, original=False, only=('id', 'name', 'owner_id', 'created_at', 'uses'))
         author = self.bot.get_user(tag.owner_id) or (await self.bot.fetch_user(tag.owner_id))
@@ -440,11 +432,9 @@ class Tags(commands.Cog):
     ):
         """
         Edit tag owned by you.
-
         Parameters
         ----------
-        name
-            Requested tag name
+        name: Requested tag name
         """
         tag = await self.get_tag(name, only=('name', 'content', 'owner_id'))
         self.can_menage(inter.author, tag)
