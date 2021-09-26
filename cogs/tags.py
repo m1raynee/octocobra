@@ -272,7 +272,7 @@ class Tags(commands.Cog):
 
     @commands.slash_command()
     async def tag(self, inter):
-        """Tag sub-command group"""
+        pass
 
     @tag.sub_command(name = 'show')
     async def tag_show(
