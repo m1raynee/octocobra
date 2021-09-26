@@ -16,18 +16,16 @@ SLASH_COMMAND_GUILDS = (
     859290967475879966,  # m1raynee's test
     808030843078836254,  # disnake
 )
-async def get_prefix(bot: 'DisnakeHelper', message): 
-    r = commands.when_mentioned(bot, message)
-    if message.channel.id in bot.dev_channel_ids and (message.author == bot.owner or message.author in bot.owners):
-        r.append('')
-    return r
+# async def get_prefix(bot: 'DisnakeHelper', message): 
+#     r = commands.when_mentioned(bot, message)
+#     if message.channel.id in bot.dev_channel_ids and (message.author == bot.owner or message.author in bot.owners):
+#         r.append('')
+#     return r
 
 class DisnakeHelper(commands.Bot):
-    dev_channel_ids = [889872309639315497, 808035299094691882]
-
     def __init__(self, **kwargs):
         super().__init__(
-            command_prefix=get_prefix,
+            command_prefix=commands.when_mentioned_or('?'),
             intents=disnake.Intents.all(),
             test_guilds=SLASH_COMMAND_GUILDS,
             **kwargs
@@ -55,7 +53,6 @@ class DisnakeHelper(commands.Bot):
             else:
                 await interaction.response.send_message(content, ephemeral=True)
             tb = '\n'.join(traceback.format_exception(type(exception), exception, exception.__traceback__))
-            await self.owner.send(**(await safe_send_prepare(f'```py\n{tb}\n```')))
             await self.owner.send((
                 '```py\n'
                 f'{interaction.user = }\n'
@@ -64,5 +61,6 @@ class DisnakeHelper(commands.Bot):
                 f'{interaction.options = }\n'
                 '```'
             ))
+            await self.owner.send(**(await safe_send_prepare(f'```py\n{tb}\n```')))
         
         # return await super().on_slash_command_error(interaction, exception)

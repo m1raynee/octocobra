@@ -1,92 +1,48 @@
 import asyncio
 import datetime
 from os import name
-from typing import Dict, Union, List
+from typing import Optional, Union, List
 
 from disnake.ext import commands
 from disnake import ui
 import disnake
+from disnake.ext.commands import param
 from tortoise.exceptions import IntegrityError
 
 from .utils.db import in_transaction, TransactionWrapper, F
 from .utils.db.tags import TagTable, TagLookup
 from .utils.helpers import safe_send_prepare
+from .utils.converters import tag_name, clean_inter_content
 from .utils import paginator
 
 
-def tag_permission():
-    async def predicate(inter: disnake.ApplicationCommandInteraction):
-        destenation = inter.bot.owner
-        
-        await destenation.send(inter.data.options)
-        return True
-    return commands.check(predicate)
-
-class FakeUser(disnake.Object):
-    avatar = None
-
-    @property
-    def display_name(self):
-        return str(self.id)
-
-    def __str__(self):
-        return str(self.id)
-
-class FakeMessage(disnake.Object):
-    "kinda hacky thing"
-    def __init__(self, inter: disnake.ApplicationCommandInteraction):
-        super().__init__(0)
-        data = inter.data
-        resolved = data.resolved
-
-        self.content = f"/{data.name} {' '.join([f'{k}: {v}' for k,v in data.options.items()])}"
-        self.mentions = [*resolved.members.values(), *resolved.users.values()]
-        self.role_mentions = list(resolved.roles.values())
-
-class TagName(commands.clean_content):
-    async def convert(self, ctx, argument: str) -> str:
-        if not hasattr(ctx, 'message'):
-            ctx.message = FakeMessage(ctx)
-        converted = await super().convert(ctx, argument)
-        lower = converted.lower().strip()
-
-        if not lower:
-            raise commands.BadArgument('Missing tag name.')
-
-        if len(lower) > 50:
-            raise commands.BadArgument('Tag name must be in range from 3 to 50.')
-
-        return lower
-
-class TagMember(commands.Converter):
-    async def convert(self, ctx, argument) -> Union[disnake.Member, FakeUser]:
-        if not hasattr(ctx, 'message'):
-            FakeMessage(ctx)
-        try:
-            return await commands.MemberConverter().convert(ctx, argument)
-        except commands.BadArgument as e:
-            if argument.isdigit():
-                return FakeUser(id=int(argument))
-            raise
-
-class CreateView(disnake.ui.View):
+class TagCreateView(disnake.ui.View):
     message: disnake.Message
 
-    def __init__(self, bot: commands.Bot, init_interaction: disnake.Interaction, cog: 'Tags'):
+    def __init__(
+        self,
+        init_interaction: disnake.Interaction,
+        cog: 'Tags',
+        edit: Optional[TagTable] = None
+    ):
         super().__init__(timeout=300)
-        self.bot = bot
-        self.init_interaction = init_interaction
-        self.cog = cog
+        self.bot = cog.bot
+        self._init_interaction = init_interaction
+        self._cog = cog
+        self._edit = edit
 
         self.name = None
         self.content = None
 
         self.message = None
         self.is_aborted = False
-        self.converter = TagName()
+        
+        if edit is not None:
+            self.remove_item(self.name_button)
+            self.name = edit.name
 
     def response_check(self, msg):
-        return msg.channel == self.message.channel and msg.author == self.init_interaction.author
+        return msg.channel == self.message.channel and msg.author == self._init_interaction.author
 
     def prepare_embed(self):
         e = disnake.Embed(
@@ -101,34 +57,37 @@ class CreateView(disnake.ui.View):
             e.description = '\n**Hint:** Tag content reached embed field limitation, this will not affect the content'
         return e
 
-    def disable_all(self):
+    def lock_all(self):
         for child in self.children:
             if child.label == 'Abort':
                 continue
             child.disabled = True
 
-    def enable_all(self):
+    def unlock_all(self):
         for child in self.children:
             if child.label != 'Abort':
                 child.disabled = False
             if child.label == 'Confirm':
+                if self._edit:
+                    if self._edit != self.content:
+                        child.disabled = False
                 if (self.name is not None) and (self.content is not None):
                     child.disabled = False
                 else:
                     child.disabled = True
 
     async def interaction_check(self, interaction: disnake.Interaction) -> bool:
-        if interaction.author != self.init_interaction.author:
-            await interaction.response.send_message('You\'re not an author of this View.', ephemeral=True)
-            return False
-        return True
+        if interaction.author == self._init_interaction.author:
+            return True
+        await interaction.response.send_message('You\'re not an author of this View.', ephemeral=True)
+        return False
 
     @ui.button(
         label='Name',
         style=disnake.ButtonStyle.secondary
     )
     async def name_button(self, button: disnake.Button, interaction: disnake.Interaction):
-        self.disable_all()
+        self.lock_all()
         msg_content = 'Cool, let\'s make a name. Send the tag name in the next message...'
 
         await interaction.response.edit_message(content=msg_content, view=self)
@@ -136,12 +95,11 @@ class CreateView(disnake.ui.View):
 
         content = ''
         try:
-            fake_ctx = commands.Context(message=msg, bot=self.bot, view=None)
-            name = await self.converter.convert(fake_ctx, msg.content)
+            name = await tag_name(interaction, msg.content)
         except commands.BadArgument as e:
             content = f'{e}. Press "Name" to retry.'
         else:
-            if self.cog.is_tag_being_made(name):
+            if self._cog.is_tag_being_made(name):
                 content = 'Sorry. This tag is currently being made by someone.'
             else:
                 rows = await (TagTable
@@ -150,12 +108,12 @@ class CreateView(disnake.ui.View):
                 )
                 if len(rows) == 0:
                     self.name = name
-                    self.cog.add_in_progress_tag(name)
+                    self._cog.add_in_progress_tag(name)
                     self.remove_item(button)
                 else:
                     content='Sorry. A tag with that name already exists.'
 
-        self.enable_all()
+        self.unlock_all()
         await self.message.edit(content=content, embed=self.prepare_embed(), view=self)
     
     @ui.button(
@@ -163,15 +121,14 @@ class CreateView(disnake.ui.View):
         style=disnake.ButtonStyle.secondary
     )
     async def content_button(self, button: disnake.Button, interaction: disnake.Interaction):
-        self.disable_all()
-        msg_content = 'Cool, let\'s make a content. Send the tag content in the next message...'
+        self.lock_all()
+        msg_content = f'Cool, let\'s {"edit the" if self._edit else "make a"} content. Send the tag content in the next message...'
 
         await interaction.response.edit_message(content=msg_content, view=self)
         msg = await self.bot.wait_for('message', check=self.response_check, timeout=300)
-        fake_ctx = commands.Context(message=msg, bot=self.bot, view=None)
 
         if msg.content:
-            clean_content = await commands.clean_content().convert(fake_ctx, msg.content)
+            clean_content = await clean_inter_content()(interaction, msg.content)
         else:
             clean_content = msg.content
 
@@ -183,7 +140,7 @@ class CreateView(disnake.ui.View):
         else:
             self.content = clean_content
 
-        self.enable_all()
+        self.unlock_all()
         await self.message.edit(content='', embed=self.prepare_embed(), view=self)
 
     @ui.button(
@@ -192,12 +149,16 @@ class CreateView(disnake.ui.View):
         disabled=True
     )
     async def comfirm_button(self, button: disnake.Button, interaction: disnake.Interaction):
+        if self._edit and self._edit.content == self.content:
+            return await interaction.response.edit_message(
+                content='Content still the same...\nHint: edit it by pressing "Content"'
+            )
         for child in self.children:
             child.disabled = True
         await interaction.response.edit_message(view=self)
 
         self.last_interaction = interaction
-        self.cog.remove_in_progress_tag(self.name)
+        self._cog.remove_in_progress_tag(self.name)
         self.stop()
     
     @ui.button(
@@ -205,7 +166,7 @@ class CreateView(disnake.ui.View):
         style=disnake.ButtonStyle.danger
     )
     async def abort_button(self, button: disnake.Button, interaction: disnake.Interaction):
-        self.cog.remove_in_progress_tag(name)
+        self._cog.remove_in_progress_tag(name)
         await interaction.response.edit_message(content='Tag creation aborted o/', view=None, embed=None)
         self.stop()
 
@@ -216,7 +177,7 @@ class CreateView(disnake.ui.View):
             else:
                 method = interaction.response.edit_message
             if self.name is not None:
-                self.cog.remove_in_progress_tag(self.name)
+                self._cog.remove_in_progress_tag(self.name)
             await method(content='You took too long. Goodbye.', view=None, embed=None)
             return self.stop()
         raise error
@@ -226,7 +187,7 @@ class TagSource(paginator.BaseListSource):
     def __init__(self, entries: List[TagLookup]):
         super().__init__(entries, per_page=20)
 
-    async def format_page(self, view: paginator.PaginatorView, page: List[TagLookup]) -> Union[disnake.Embed, str, dict]:
+    async def format_page(self, view: paginator.PaginatorView, page: List[TagLookup]):
         e = self.base_embed()
         e.description = '\n'.join([
             f'{i}. {row.name} (id: {row.id})'
@@ -234,8 +195,6 @@ class TagSource(paginator.BaseListSource):
             in enumerate(page, view.current_page*self.per_page+1)
         ])
         return e
-
-tag_name = disnake.Option('name', 'Requested tag name', disnake.OptionType.string, True)
 
 class Tags(commands.Cog):
     """Commands to fetch something by a tag name"""
@@ -276,7 +235,6 @@ class Tags(commands.Cog):
         return tag
 
     async def create_tag(self, inter: disnake.Interaction, name, content):
-        name= name.lower()
         async with in_transaction() as tr:
             tr: TransactionWrapper
             try:
@@ -308,29 +266,37 @@ class Tags(commands.Cog):
     def remove_in_progress_tag(self, name):
         self._tags_being_made.discard(name.lower())
 
+    def can_menage(self, user, tag: TagTable):
+        if not (user and (tag.owner_id == user.id or self.bot.owner.id == user.id)):
+            raise commands.CheckFailure('You cannot menage this tag.')
 
-    @commands.slash_command(description='Tag sub-command group')
+    @commands.slash_command()
     async def tag(self, inter):
-        pass
+        """Tag sub-command group"""
 
-    @tag.sub_command(
-        name = 'show',
-        description = 'Search for a tag',
-        options = [
-            tag_name,
-            disnake.Option(
-                'type', 
-                'Whether what content type will be shown', 
-                choices=[
-                    disnake.OptionChoice('Rich', 'rich'),
-                    disnake.OptionChoice('Raw', 'raw')
-                ]
-            )
-        ]
-    )
-    async def tag_show(self, inter: disnake.ApplicationCommandInteraction, name, type=None):
-        name = await TagName().convert(inter, name)
+    @tag.sub_command(name = 'show')
+    async def tag_show(
+        self,
+        inter: disnake.ApplicationCommandInteraction,
+        name: str = commands.param(converter=clean_inter_content()),
+        type = commands.param(
+            'rich',
+            choices = [
+                disnake.OptionChoice('Rich', 'rich'),
+                disnake.OptionChoice('Raw', 'raw')
+            ]
+        )
+    ):
+        """
+        Search for a tag.
 
+        Parameters
+        ----------
+        name
+            Requested tag name
+        type
+            Whether what content type will be shown
+        """
         try:
             tag = await self.get_tag(name)
         except RuntimeError as e:
@@ -348,12 +314,12 @@ class Tags(commands.Cog):
             .update(uses = F('uses') + 1)
         )
 
-    @tag.sub_command(
-        name = 'create',
-        description = 'Creates a new tag owned by you (interactive !!)',
-    )
+    @tag.sub_command(name = 'create')
     async def tag_create(self, inter: disnake.ApplicationCommandInteraction):
-        view = CreateView(self.bot, inter, self)
+        """
+        Creates a new tag owned by you (interactive !!)
+        """
+        view = TagCreateView(inter, self)
         await inter.response.send_message(embed=view.prepare_embed(), view=view)
         view.message = await inter.original_message()
 
@@ -361,24 +327,29 @@ class Tags(commands.Cog):
             if view.name is not None:
                 self.remove_in_progress_tag(view.name)
             return await view.message.edit(content='You took too long. Goodbye.', view=None, embed=None)
-        
-        await view.message.edit(view=None)
+        else:
+            await view.message.edit(view=None)
+
         if hasattr(view, 'last_interaction'):
             await self.create_tag(view.last_interaction, view.name, view.content)
 
-    @tag.sub_command(
-        name = 'alias',
-        description = 'Creates an alias for a pre-existing tag.',
-        options = [
-            disnake.Option('new_name', 'Alias name that will be created.', disnake.OptionType.string, True),
-            disnake.Option('old_name', 'Name of pre-existing tag.', disnake.OptionType.string, True)
-        ]
-    )
-    async def tag_alias(self, inter: disnake.ApplicationCommandInteraction, new_name, old_name):
-        converter = TagName()
-        new_name = await converter.convert(inter, new_name)
-        old_name = await converter.convert(inter, old_name)
+    @tag.sub_command(name = 'alias')
+    async def tag_alias(
+        self,
+        inter: disnake.ApplicationCommandInteraction,
+        new_name: str = commands.param(converter=clean_inter_content()),
+        old_name: str = commands.param(converter=clean_inter_content())
+    ):
+        """
+        Creates an alias for a pre-existing tag.
 
+        Parameters
+        ----------
+        new_name
+            Alias name that will be created.
+        old_name
+            Name of pre-existing tag.
+        """
         tag_lookup = await (TagLookup
             .filter(name=old_name)
             .first()
@@ -401,13 +372,20 @@ class Tags(commands.Cog):
             embed.description = f'Tag alias "{new_name}" that points to "{old_name}" successfully created.'
         await inter.response.send_message(embed=embed)
 
-    @tag.sub_command(
-        name = 'info',
-        description = 'Shows an information about tag.',
-        options = [tag_name]
-    )
-    async def tag_info(self, inter: disnake.ApplicationCommandInteraction, name):
-        name = await TagName().convert(inter, name)
+    @tag.sub_command(name = 'info')
+    async def tag_info(
+        self,
+        inter: disnake.ApplicationCommandInteraction,
+        name: str = commands.param(converter=clean_inter_content())
+    ):
+        """
+        Shows an information about tag.
+
+        Parameters
+        ----------
+        name
+            Requested tag name
+        """
         tag = await self.get_tag(name, original=False, only=('id', 'name', 'owner_id', 'created_at', 'uses'))
         author = self.bot.get_user(tag.owner_id) or (await self.bot.fetch_user(tag.owner_id))
 
@@ -440,27 +418,51 @@ class Tags(commands.Cog):
 
         await inter.response.send_message(embed=embed)
 
-    @tag.sub_command(
-        name = 'all',
-        description = 'Shows all existed tags'
-    )
-    async def tag_stats(self, inter: disnake.ApplicationCommandInteraction):
+    @tag.sub_command(name = 'all')
+    async def tag_all(self, inter: disnake.ApplicationCommandInteraction):
+        """
+        Shows all existed tags
+        """
         rows = await (TagLookup
             .all()
             .order_by('name')
+            .only('id', 'name')
         )
         source = TagSource(rows)
         view = paginator.PaginatorView(source, interaction=inter)
         await view.start()
 
-    @tag.sub_command(
-        name = 'edit',
-        description = 'Edit tag owned by you.',
-        options = [tag_name]
-    )
-    @tag_permission()
-    async def tag_edit(self, inter: disnake.ApplicationCommandInteraction, name):
-        await inter.response.send_message('soon (tm)')
+    @tag.sub_command(name = 'edit')
+    async def tag_edit(
+        self,
+        inter: disnake.ApplicationCommandInteraction,
+        name: str = commands.param(converter=clean_inter_content())
+    ):
+        """
+        Edit tag owned by you.
+
+        Parameters
+        ----------
+        name
+            Requested tag name
+        """
+        tag = await self.get_tag(name, only=('name', 'content', 'owner_id'))
+        self.can_menage(inter.author, tag)
+
+        view = TagCreateView(inter, self, tag)
+        await inter.response.send_message(embed=view.prepare_embed(), view=view)
+        view.message = await inter.original_message()
+
+        if await view.wait():
+            return await view.message.edit(content='You took too long. Goodbye.', view=None, embed=None)
+        await view.message.edit(content=None, view=None)
+
+        if hasattr(view, 'last_interaction'):
+            await (TagTable
+                .filter(id=tag.id)
+                .update(content=view.content)
+            )
+            await view.last_interaction.followup.send(f'Tag {name} successfully updated.')
 
 
 def setup(bot):
