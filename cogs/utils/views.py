@@ -1,4 +1,4 @@
-from typing import Callable, Coroutine, Iterable, List, Union, Optional
+from typing import Any, Callable, Coroutine, Iterable, List, Union, Optional
 import disnake
 
 class _BaseView(disnake.ui.View):
@@ -22,7 +22,7 @@ class Confirm(_BaseView):
                 Union[bool, None],
                 disnake.MessageInteraction
             ],
-            Coroutine[None]
+            Coroutine[Any, Any, Any]
         ],
         *,
         listen_to: Iterable[int]
