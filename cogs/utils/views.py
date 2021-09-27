@@ -16,7 +16,7 @@ class Confirm(disnake.ui.View):
     
     @disnake.ui.button(
         label='Cancel',
-        style=disnake.ButtonStyle.success
+        style=disnake.ButtonStyle.danger
     )
     async def do_cancel(self, _, inter: disnake.ApplicationCommandInteraction):
         self.value = False
