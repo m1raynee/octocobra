@@ -71,3 +71,5 @@ async def tag_name(inter: disnake.ApplicationCommandInteraction, argument: str):
         raise commands.BadArgument('Tag name must be less than 50')
 
     return lower
+
+async def bot_user(inter: disnake.ApplicationCommandInteraction, argument: int): ...

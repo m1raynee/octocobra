@@ -188,6 +188,14 @@ class Disnake(commands.Cog, name='disnake'):
         language = language or 'latest'
         await self.do_rtfm(inter, language, object)
     
+    # @commands.slash_command()
+    # async def addbot(
+    #     self,
+    #     inter: disnake.ApplicationCommandInteraction,
+    #     bot_id: int = commands.param()
+    # ):
+    #     ...
+    
 
 def setup(bot):
     bot.add_cog(Disnake(bot))
