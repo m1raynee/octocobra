@@ -201,7 +201,7 @@ class TagSource(paginator.BaseListSource):
 
 name_conv = clean_inter_content()
 async def name_autocomp(inter: disnake.ApplicationCommandInteraction, user_input: str):
-    user_input = name_conv(inter, user_input)
+    user_input = await name_conv(inter, user_input)
     rows = await (TagLookup
         .filter(name__contains=user_input)
         .limit(20)
