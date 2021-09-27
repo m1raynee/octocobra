@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 from os import name
-from typing import Optional, Union, List
+from typing import Dict, Optional, Union, List
 
 from disnake.ext import commands
 from disnake import ui
@@ -198,7 +198,17 @@ class TagSource(paginator.BaseListSource):
         ])
         return e
 
-convert = clean_inter_content()
+name_conv = clean_inter_content()
+async def name_autocomplete(inter: disnake.ApplicationCommandInteraction, user_input: str):
+    user_input = name_conv(inter, user_input)
+    rows = await (TagLookup
+        .filter(name__contains=user_input)
+        .limit(20)
+        .only('name')
+    )
+    return [row.name for row in rows]
+
+name_param = commands.param(converter=name_conv, autocomplete=name_autocomplete)
 
 class Tags(commands.Cog):
     """Commands to fetch something by a tag name"""
@@ -282,7 +292,7 @@ class Tags(commands.Cog):
     async def tag_show(
         self,
         inter: disnake.ApplicationCommandInteraction,
-        name: str = commands.param(converter=convert),
+        name: str = name_param,
         type = commands.param(
             'rich',
             choices = [
@@ -338,8 +348,8 @@ class Tags(commands.Cog):
     async def tag_alias(
         self,
         inter: disnake.ApplicationCommandInteraction,
-        new_name: str = commands.param(converter=convert),
-        old_name: str = commands.param(converter=convert)
+        new_name: str = name_param,
+        old_name: str = name_param
     ):
         """
         Creates an alias for a pre-existing tag.
@@ -374,7 +384,7 @@ class Tags(commands.Cog):
     async def tag_info(
         self,
         inter: disnake.ApplicationCommandInteraction,
-        name: str = commands.param(converter=convert)
+        name: str = name_param
     ):
         """
         Shows an information about tag.
@@ -432,7 +442,7 @@ class Tags(commands.Cog):
     async def tag_edit(
         self,
         inter: disnake.ApplicationCommandInteraction,
-        name: str = commands.param(converter=convert)
+        name: str = name_param
     ):
         """
         Edit tag owned by you.
@@ -463,7 +473,7 @@ class Tags(commands.Cog):
     async def tag_delete(
         self,
         inter: disnake.ApplicationCommandInteraction,
-        name: str = commands.param(converter=convert)
+        name: str = name_param
     ):
         """
         Delete tag owned by you.
