@@ -349,7 +349,7 @@ class Tags(commands.Cog):
     async def tag_alias(
         self,
         inter: disnake.ApplicationCommandInteraction,
-        new_name: str = name_param(),
+        new_name: str = commands.param(conv=name_conv),
         old_name: str = name_param()
     ):
         """
