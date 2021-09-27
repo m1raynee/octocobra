@@ -475,7 +475,7 @@ class Tags(commands.Cog):
         view = Confirm()
         msg = 'tag' if isinstance(tag, TagTable) else 'tag alias'
         await inter.response.send_message(f'Are you sure you wanna delete {msg} "{name}"? It cannot be undo.', view=view)
-        result = view.start()
+        result = await view.start()
         if result is None:
             await view.inter.response.edit_message(content='You took too long. Goodbye.', view=None)
         elif result:
