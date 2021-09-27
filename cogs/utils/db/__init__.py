@@ -8,4 +8,3 @@ from tortoise.backends.sqlite.client import TransactionWrapper
 
 async def init():
     await Tortoise.init(config_file='tortoise.yaml')
-    await Tortoise.generate_schemas()

@@ -474,7 +474,7 @@ class Tags(commands.Cog):
         tag = await self.get_tag(name, original=False, only=('id', 'owner_id'))
         self.can_menage(inter.author, tag)
 
-        msg = 'tag' if isinstance(tag, TagTable) else 'tag alias'
+        msg = str(tag)
 
         async def callback(value, interaction):
             if value is None:
@@ -489,8 +489,7 @@ class Tags(commands.Cog):
         
         view = Confirm(callback, listen_to=self.bot.ids(inter.author.id))
         await inter.response.send_message(f'Are you sure you wanna delete {msg} "{name}"? It cannot be undo.', view=view)
-        await view.wait()
-        view.stop()
+
 
 def setup(bot):
     bot.add_cog(Tags(bot))

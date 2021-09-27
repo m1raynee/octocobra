@@ -11,6 +11,9 @@ class TagTable(Model):
 
     aliases: ForeignKeyRelation['TagLookup']
 
+    def __str__(self) -> str:
+        return 'tag'
+
     class Meta:
         table = 'tags'
 
@@ -21,6 +24,9 @@ class TagLookup(Model):
 
     owner_id = BigIntField()
     created_at = DatetimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return 'tag alias'
 
     class Meta:
         table = 'tagslookup'
