@@ -198,6 +198,8 @@ class TagSource(paginator.BaseListSource):
         ])
         return e
 
+convert = clean_inter_content()
+
 class Tags(commands.Cog):
     """Commands to fetch something by a tag name"""
 
@@ -280,7 +282,7 @@ class Tags(commands.Cog):
     async def tag_show(
         self,
         inter: disnake.ApplicationCommandInteraction,
-        name: str = commands.param(converter=clean_inter_content()),
+        name: str = commands.param(converter=convert),
         type = commands.param(
             'rich',
             choices = [
@@ -336,8 +338,8 @@ class Tags(commands.Cog):
     async def tag_alias(
         self,
         inter: disnake.ApplicationCommandInteraction,
-        new_name: str = commands.param(converter=clean_inter_content()),
-        old_name: str = commands.param(converter=clean_inter_content())
+        new_name: str = commands.param(converter=convert),
+        old_name: str = commands.param(converter=convert)
     ):
         """
         Creates an alias for a pre-existing tag.
@@ -372,7 +374,7 @@ class Tags(commands.Cog):
     async def tag_info(
         self,
         inter: disnake.ApplicationCommandInteraction,
-        name: str = commands.param(converter=clean_inter_content())
+        name: str = commands.param(converter=convert)
     ):
         """
         Shows an information about tag.
@@ -430,7 +432,7 @@ class Tags(commands.Cog):
     async def tag_edit(
         self,
         inter: disnake.ApplicationCommandInteraction,
-        name: str = commands.param(converter=clean_inter_content())
+        name: str = commands.param(converter=convert)
     ):
         """
         Edit tag owned by you.
@@ -461,7 +463,7 @@ class Tags(commands.Cog):
     async def tag_delete(
         self,
         inter: disnake.ApplicationCommandInteraction,
-        name: str = commands.param(converter=clean_inter_content())
+        name: str = commands.param(converter=convert)
     ):
         """
         Delete tag owned by you.
@@ -472,20 +474,23 @@ class Tags(commands.Cog):
         tag = await self.get_tag(name, original=False, only=('id', 'owner_id'))
         self.can_menage(inter.author, tag)
 
-        view = Confirm()
         msg = 'tag' if isinstance(tag, TagTable) else 'tag alias'
+
+        async def callback(value, interaction):
+            if value is None:
+                content = 'You took too long. Goodbye.'
+            elif value:
+                await tag.delete()
+                content = f'{msg.capitalize()} {name} was deleted.'
+            else:
+                content = 'Canceled'
+            
+            await interaction.response.edit_message(content=content, view=None)
+        
+        view = Confirm(callback, listen_to=self.bot.ids(inter.author.id))
         await inter.response.send_message(f'Are you sure you wanna delete {msg} "{name}"? It cannot be undo.', view=view)
         await view.wait()
         view.stop()
-
-        if view.value is None:
-            content = 'You took too long. Goodbye.'
-        elif view.value:
-            await tag.delete()
-            content = f'{msg.capitalize()} {name} was deleted.'
-        else:
-            content = 'Canceled'
-        await inter.edit_original_message(content=content, view=None)
 
 def setup(bot):
     bot.add_cog(Tags(bot))

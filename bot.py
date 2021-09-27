@@ -64,3 +64,5 @@ class DisnakeHelper(commands.Bot):
             await self.owner.send(**(await safe_send_prepare(f'```py\n{tb}\n```')))
         
         # return await super().on_slash_command_error(interaction, exception)
+    def ids(self, *id_list):
+        return list(set((*id_list, *self.owner_ids)))
