@@ -475,14 +475,15 @@ class Tags(commands.Cog):
         view = Confirm()
         msg = 'tag' if isinstance(tag, TagTable) else 'tag alias'
         await inter.response.send_message(f'Are you sure you wanna delete {msg} "{name}"? It cannot be undo.', view=view)
-        result = await view.start()
-        if result is None:
+        await view.wait()
+        if view.value is None:
             await view.inter.response.edit_message(content='You took too long. Goodbye.', view=None)
-        elif result:
+        elif view.value:
             await tag.delete()
             await view.inter.response.edit_message(content=f'{msg.capitalize()} {name} was deleted.', view=None)
         else:
             await view.inter.response.edit_message(content='Canceled', view=None)
+        view.stop()
 
 def setup(bot):
     bot.add_cog(Tags(bot))

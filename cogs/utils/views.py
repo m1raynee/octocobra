@@ -22,7 +22,3 @@ class Confirm(disnake.ui.View):
         self.value = False
         self.inter = inter
         self.stop()
-    
-    async def start(self):
-        await self.wait()
-        return self.value
