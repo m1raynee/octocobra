@@ -3,6 +3,7 @@ import re
 import disnake
 from disnake.ext import commands
 
+id_pattern = re.compile(r'[0-9]{15,19}')
 
 def clean_inter_content(
     *,
@@ -72,4 +73,11 @@ async def tag_name(inter: disnake.ApplicationCommandInteraction, argument: str):
 
     return lower
 
-async def bot_user(inter: disnake.ApplicationCommandInteraction, argument: int): ...
+async def bot_user(inter: disnake.ApplicationCommandInteraction, argument: str):
+    if not argument.isdigit():
+        raise TypeError('This field must be a integer')
+    match = re.match(id_pattern, argument)
+    if match is None:
+        raise ValueError(f'{argument!r} is not an id')
+    id = match.group()
+    return int(id)

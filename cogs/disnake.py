@@ -1,12 +1,15 @@
 import io
 import re
 import os
+from typing import cast
 import zlib
 
 from disnake.ext import commands
 import disnake
+import aiohttp
 
 from .utils import fuzzy
+from .utils.converters import bot_user
 from bot import DisnakeHelper
 
 DOC_KEYS = {
@@ -15,6 +18,14 @@ DOC_KEYS = {
     'dislash': 'https://dislashpy.readthedocs.io/en/latest/',
     'dpy-master': 'http://discordpy.readthedocs.io/en/master/'
 }
+Branches = commands.option_enum(
+    {
+        'disnake latest': 'latest',
+        'python 3.x': 'python',
+        'dislash.py': 'dislash',
+        'discord.py master': 'dpy-master'
+    }
+)
 
 class SphinxObjectFileReader:
     # Inspired by Sphinx's InventoryFileReader
@@ -123,12 +134,13 @@ class Disnake(commands.Cog, name='disnake'):
         cache = {}
         for key, page in DOC_KEYS.items():
             cache[key] = {}
-            async with self.bot.session.get(page + '/objects.inv') as resp:
-                if resp.status != 200:
-                    raise RuntimeError('Cannot build rtfm lookup table, try again later.')
+            async with aiohttp.ClientSession(loop=self.bot.loop) as session:
+                async with session.get(page + '/objects.inv') as resp:
+                    if resp.status != 200:
+                        raise RuntimeError('Cannot build rtfm lookup table, try again later.')
 
-                stream = SphinxObjectFileReader(await resp.read())
-                cache[key] = self.parse_object_inv(stream, page)
+                    stream = SphinxObjectFileReader(await resp.read())
+                    cache[key] = self.parse_object_inv(stream, page)
 
         self._cache = cache
     
@@ -169,32 +181,29 @@ class Disnake(commands.Cog, name='disnake'):
         #     query = 'INSERT INTO rtfm (user_id) VALUES ($1) ON CONFLICT (user_id) DO UPDATE SET count = rtfm.count + 1;'
         #     await ctx.db.execute(query, ctx.author.id)
 
-    @commands.slash_command(
-        description='Gives you a documentation link for a selected doc entity.',
-        options=[
-            disnake.Option('object', 'Requested object', disnake.OptionType.string, True),
-            disnake.Option(
-                'language', 'Documentation key',
-                choices=[
-                    disnake.OptionChoice('disnake latest', 'latest'),
-                    disnake.OptionChoice('Python 3.x', 'python'),
-                    disnake.OptionChoice('dislash.py', 'dislash'),
-                    disnake.OptionChoice('discord.py master', 'dpy-master'),
-                ]
-            ),
-        ]
-    )
-    async def rtfm(self, inter, object, language = None):
-        language = language or 'latest'
+    @commands.slash_command()
+    async def rtfm(
+        self,
+        inter,
+        object: str,
+        language: Branches = commands.param('latest')
+    ):
+        """
+        Gives you a documentation link for a selected doc entity.
+        Parameters
+        ----------
+        object: Requested object
+        docs: Documentation key
+        """
         await self.do_rtfm(inter, language, object)
     
     # @commands.slash_command()
     # async def addbot(
     #     self,
     #     inter: disnake.ApplicationCommandInteraction,
-    #     bot_id: int = commands.param()
+    #     bot_id: str = commands.param(conv=bot_user)
     # ):
-    #     ...
+    #     bot_id = cast(int, bot_id)
     
 
 def setup(bot):

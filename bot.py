@@ -10,6 +10,7 @@ from cogs.utils.helpers import safe_send_prepare
 initial_extensions = (
     'cogs.tags',  # cogs
     'cogs.disnake',
+    'cogs.meta',
     'jishaku',  # community extensions
 )
 SLASH_COMMAND_GUILDS = (
@@ -39,7 +40,6 @@ class DisnakeHelper(commands.Bot):
                 print(f'Could not load extension {ext} due to {e.__class__.__name__}: {e}')
         
         self.loop.run_until_complete(db.init())
-        self.session = aiohttp.ClientSession(loop=self.loop)
 
     async def on_ready(self):
         print(f'Logged on as {self.user} (ID: {self.user.id})')
