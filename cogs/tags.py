@@ -14,6 +14,7 @@ from .utils.db.tags import TagTable, TagLookup
 from .utils.helpers import safe_send_prepare
 from .utils.converters import tag_name, clean_inter_content
 from .utils import paginator
+from .utils.views import Confirm
 
 
 class TagCreateView(disnake.ui.View):
@@ -455,7 +456,33 @@ class Tags(commands.Cog):
                 .update(content=view.content)
             )
             await view.last_interaction.followup.send(f'Tag {name} successfully updated.')
+    
+    @tag.sub_command(name='delete')
+    async def tag_delete(
+        self,
+        inter: disnake.ApplicationCommandInteraction,
+        name: str = commands.param(converter=clean_inter_content())
+    ):
+        """
+        Delete tag owned by you.
+        Parameters
+        ----------
+        name: Requested tag name
+        """
+        tag = await self.get_tag(name, original=False, only=('id', 'owner_id'))
+        self.can_menage(inter.author, tag)
 
+        view = Confirm()
+        msg = 'tag' if isinstance(tag, TagTable) else 'tag alias'
+        await inter.response.send_message(f'Are you sure you wanna delete {msg} "{name}"? It cannot be undo.', view=view)
+        result = view.start()
+        if result is None:
+            await view.inter.response.edit_message(content='You took too long. Goodbye.', view=None)
+        elif result:
+            await tag.delete()
+            await view.inter.response.edit_message(content=f'{msg.capitalize()} {name} was deleted.', view=None)
+        else:
+            await view.inter.response.edit_message(content='Canceled', view=None)
 
 def setup(bot):
     bot.add_cog(Tags(bot))
