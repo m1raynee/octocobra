@@ -11,7 +11,7 @@ class Confirm(disnake.ui.View):
     )
     async def do_confirm(self, _, inter: disnake.ApplicationCommandInteraction):
         self.value = True
-        self.inter = inter
+        await inter.response.defer()
         self.stop()
     
     @disnake.ui.button(
@@ -20,5 +20,5 @@ class Confirm(disnake.ui.View):
     )
     async def do_cancel(self, _, inter: disnake.ApplicationCommandInteraction):
         self.value = False
-        self.inter = inter
+        await inter.response.defer()
         self.stop()
