@@ -31,18 +31,18 @@ class TagCreateView(disnake.ui.View):
         self._cog = cog
         self._edit = edit
 
-        self.name = None
-        self.content = None
-
         self.message = None
         self.is_aborted = False
-        
+
         if edit is not None:
             self.remove_item(self.name_button)
             self.name = edit.name
+            self.content = edit.content
+        else:
+            self.name = self.content = None
 
     def response_check(self, msg):
-        return msg.channel == self.message.channel and msg.author == self._init_interaction.author
+        return self._init_interaction.channel == msg.channel and msg.author == self._init_interaction.author
 
     def prepare_embed(self):
         e = disnake.Embed(
@@ -135,13 +135,14 @@ class TagCreateView(disnake.ui.View):
         if msg.attachments:
             clean_content += f'\n{msg.attachments[0].url}'
 
+        c = None
         if len(clean_content) > 2000:
-            await self.message.edit('Tag content is a maximum of 2000 characters.')
+            c = 'Tag content is a maximum of 2000 characters.'
         else:
             self.content = clean_content
 
         self.unlock_all()
-        await self.message.edit(content='', embed=self.prepare_embed(), view=self)
+        await self.message.edit(content=c, embed=self.prepare_embed(), view=self)
 
     @ui.button(
         label='Confirm',
@@ -444,8 +445,9 @@ class Tags(commands.Cog):
         view.message = await inter.original_message()
 
         if await view.wait():
-            return await view.message.edit(content='You took too long. Goodbye.', view=None, embed=None)
-        await view.message.edit(content=None, view=None)
+            await view.message.edit(content='You took too long. Goodbye.', view=None, embed=None)
+        else:
+            await view.message.edit(view=None)
 
         if hasattr(view, 'last_interaction'):
             await (TagTable
