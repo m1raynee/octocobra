@@ -33,10 +33,10 @@ class Confirm(_BaseView):
             Coroutine[Any, Any, Any]
         ],
         *,
-        listen_to: Iterable[int],
+        listen_to: Iterable[int] = [],
         labels: Tuple[str, str] = ('Confirm', 'Cancel')
     ):
-        super().__init__(listen_to=listen_to, timeout=180)
+        super().__init__(listen_to=listen_to)
         self.value = None
         self.callback = callback
 

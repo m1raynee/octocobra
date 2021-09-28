@@ -16,7 +16,7 @@ from bot import DisnakeHelper
 
 DISNAKE_GUILD_ID = 808030843078836254
 DISNAKE_ADDBOT_CHANNEL = 808032994668576829
-DISNAKE_MODS = (301295716066787332,)
+DISNAKE_MODS = (301295716066787332, 428483942329614336)
 
 DOC_KEYS = {
     'latest': 'https://disnake.readthedocs.io/en/latest/',
@@ -71,7 +71,7 @@ class AddBotView(_BaseView):
         self.bot_owner = bot_owner
         self.community_bot = community_bot
 
-    @disnake.ui.button(label='Accept', custom_id='addbot:accept', style=disnake.ButtonStyle.success)
+    @disnake.ui.button(label='Accept', style=disnake.ButtonStyle.success)
     async def do_accept(self, _, interaction: disnake.MessageInteraction):
         msg = await interaction.original_message()
         e = msg.embeds[0]
@@ -84,7 +84,7 @@ class AddBotView(_BaseView):
         )
         await self.bot_owner.send(f'Your bot {self.community_bot.mention} was invited to disnake server.')
 
-    @disnake.ui.button(label='Deny', custom_id='addbot:deny', style=disnake.ButtonStyle.danger)
+    @disnake.ui.button(label='Deny', style=disnake.ButtonStyle.danger)
     async def do_accept(self, _, interaction: disnake.MessageInteraction):
         msg = await interaction.original_message()
         e = msg.embeds[0]
