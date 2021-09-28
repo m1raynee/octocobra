@@ -66,33 +66,30 @@ class SphinxObjectFileReader:
                 pos = buf.find(b'\n')
 
 class AddBotView(_BaseView):
-    def __init__(self, bot_owner: disnake.User, community_bot: disnake.User, *, listen_to):
+    def __init__(self, bot_owner: disnake.User, community_bot: disnake.User, *, listen_to, embed):
         super().__init__(listen_to=listen_to, timeout=None)
         self.bot_owner = bot_owner
         self.community_bot = community_bot
+        self.embed = embed
 
     @disnake.ui.button(label='Accept', style=disnake.ButtonStyle.success)
     async def do_accept(self, _, interaction: disnake.MessageInteraction):
-        msg = await interaction.original_message()
-        e = msg.embeds[0]
-        e.colour = disnake.Colour.green()
+        self.embed.colour = disnake.Colour.green()
 
         await interaction.response.edit_message(
             content=f'{self.bot_owner.mention} will be aware about adding a bot.',
-            embed=e,
+            embed=self.embed,
             view=None
         )
         await self.bot_owner.send(f'Your bot {self.community_bot.mention} was invited to disnake server.')
 
     @disnake.ui.button(label='Deny', style=disnake.ButtonStyle.danger)
     async def do_accept(self, _, interaction: disnake.MessageInteraction):
-        msg = await interaction.original_message()
-        e = msg.embeds[0]
-        e.colour = disnake.Colour.red()
+        self.embed.colour = disnake.Colour.red()
 
         await interaction.response.edit_message(
             content=f'{self.bot_owner.mention} will be aware about rejecting a bot.',
-            embed=e,
+            embed=self.embed,
             view=None
         )
         await self.bot_owner.send(f'Bot {self.community_bot.mention} invitation was rejected.')
