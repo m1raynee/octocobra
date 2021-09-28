@@ -83,7 +83,7 @@ def user(**attrs):
         if match is None:
             raise ValueError(f'{argument!r} is not an id')
         id = int(match.group())
-        user = inter.bot.fetch_user(id)
+        user = await inter.bot.fetch_user(id)
 
         # global -> local
         _all = all
