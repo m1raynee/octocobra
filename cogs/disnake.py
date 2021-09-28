@@ -216,7 +216,7 @@ class Disnake(commands.Cog, name='disnake'):
             else:
                 content = 'Canceled'
             await inter.response.edit_message(content=content, view=None)
-        view = Confirm(callback)
+        view = Confirm(callback, listen_to=(inter.author.id,))
 
         await inter.response.send_message(
             f'You\'re going to add {bot.mention} on this server.\n'
