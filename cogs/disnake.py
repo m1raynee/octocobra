@@ -215,26 +215,25 @@ class Disnake(commands.Cog, name='disnake'):
                 content = 'You will get a DM regarding the status of your bot, so make sure you have them on.'
             else:
                 content = 'Canceled'
-            await inter.response.edit_message(content=content, view=None)
-        view = Confirm(callback, listen_to=(inter.author.id,))
+            await inter.response.edit_message(view=None)
+            await inter.followup.send(content)
 
+        view = Confirm(callback, listen_to=(inter.author.id,))
         await inter.response.send_message(
             f'You\'re going to add {bot.mention} on this server.\n'
             'To agree, please press "Confirm" button',
             view = view
         )
         await view.wait()
-        if view.value:
-            url = oauth_url(bot.id, guild=disnake.Object(DISNAKE_GUILD_ID), scopes=('bot', 'application.commands'))
-            await self.bot.get_partial_messageable(DISNAKE_ADDBOT_CHANNEL).send(
-                embed=disnake.Embed(
-                    description=f'[Invite]({url})',
-                    color=disnake.Colour.orange()
-                ).add_field(
-                    name='Reason',
-                    value=reason
-                )
-            )
+        if not view.value:
+            return
+
+        url = oauth_url(bot.id, guild=disnake.Object(DISNAKE_GUILD_ID), scopes=('bot', 'application.commands'))
+        e = disnake.Embed(description=f'[Invite]({url})', color=disnake.Colour.orange())
+        e.add_field(name='Reason',value=reason)
+        e.set_author(name=inter.author.display_name, icon_url=inter.author.display_avatar)
+
+        msg = await self.bot.get_partial_messageable(DISNAKE_ADDBOT_CHANNEL).send(embed=e)
 
 
 def setup(bot):
