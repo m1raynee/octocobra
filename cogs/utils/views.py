@@ -52,4 +52,4 @@ class Confirm(_BaseView):
 
     async def finalize(self, inter):
         await self.callback(self.value, inter)
-        await self.stop()
+        self.stop()
