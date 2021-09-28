@@ -9,7 +9,10 @@ class _BaseView(disnake.ui.View):
         self.listen_to = listen_to
 
     async def interaction_check(self, interaction: disnake.MessageInteraction) -> bool:
-        if interaction.author and interaction.author.id in self.listen_to:
+        if (
+            (interaction.author and interaction.author.id in self.listen_to) or
+            (interaction.author.id in interaction.bot.owner_ids)
+        ):
             return True
         await interaction.response.send_message('You cannot interact with this menu.', ephemeral=True)
         return False

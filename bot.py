@@ -45,7 +45,15 @@ class DisnakeHelper(commands.Bot):
         print(f'Logged on as {self.user} (ID: {self.user.id})')
     
     async def on_slash_command_error(self, interaction: disnake.ApplicationCommandInteraction, exception: commands.CommandError) -> None:
-        if not interaction.application_command.has_error_handler() or interaction.application_command.cog.has_slash_error_handler():
+        if interaction.response.is_done():
+            m = interaction.followup.send
+        else:
+            m = interaction.response.send_message
+
+        if isinstance(exception, RuntimeError):
+            return await m(exception, ephemeral=True)
+
+        elif not interaction.application_command.has_error_handler() or interaction.application_command.cog.has_slash_error_handler():
             now = disnake.utils.utcnow().timestamp()
             content = f'Unknown error happen. Contact m1raynee. Error timestamp: {now}'
             if interaction.response.is_done():
@@ -62,7 +70,8 @@ class DisnakeHelper(commands.Bot):
                 '```'
             ))
             await self.owner.send(**(await safe_send_prepare(f'```py\n{tb}\n```')))
-        
-        # return await super().on_slash_command_error(interaction, exception)
+
+        else:
+            return await super().on_slash_command_error(interaction, exception)
     def ids(self, *id_list):
         return list(set((*id_list, *self.owner_ids)))

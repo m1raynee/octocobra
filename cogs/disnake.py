@@ -5,12 +5,17 @@ from typing import cast
 import zlib
 
 from disnake.ext import commands
+from disnake.utils import oauth_url
 import disnake
 import aiohttp
 
 from .utils import fuzzy
-from .utils.converters import bot_user
+from .utils.views import Confirm
+from .utils.converters import user
 from bot import DisnakeHelper
+
+DISNAKE_GUILD_ID = 808030843078836254
+DISNAKE_ADDBOT_CHANNEL = 808032994668576829
 
 DOC_KEYS = {
     'latest': 'https://disnake.readthedocs.io/en/latest/',
@@ -64,16 +69,6 @@ class Disnake(commands.Cog, name='disnake'):
 
     def __init__(self, bot: DisnakeHelper):
         self.bot = bot
-
-    async def cog_slash_command_error(self, inter: disnake.ApplicationCommandInteraction, error: Exception) -> None:
-        if isinstance(error, RuntimeError):
-            if inter.response.is_done():
-                m = inter.followup.send
-            else:
-                m = inter.response.send_message
-            return await m(error, ephemeral=True)
-
-        return await super().cog_slash_command_error(inter, error)
 
     def parse_object_inv(self, stream: SphinxObjectFileReader, url: str):
         # key: URL
@@ -197,14 +192,50 @@ class Disnake(commands.Cog, name='disnake'):
         """
         await self.do_rtfm(inter, language, object)
     
-    # @commands.slash_command()
-    # async def addbot(
-    #     self,
-    #     inter: disnake.ApplicationCommandInteraction,
-    #     bot_id: str = commands.param(conv=bot_user)
-    # ):
-    #     bot_id = cast(int, bot_id)
-    
+    @commands.slash_command()
+    async def addbot(
+        self,
+        inter: disnake.ApplicationCommandInteraction,
+        bot_id: str = commands.param(conv=user(bot=True)),
+        reason: str = commands.param()
+    ):
+        """
+        Requests your bot to be added to the server.
+        Parameters
+        ----------
+        bot_id: Bot user id
+        reason: Why you want your bot here?
+        """
+        bot: disnake.User = bot_id
+
+        async def callback(res, inter: disnake.MessageInteraction):
+            if res is None:
+                content = 'You took too long.'
+            elif res:
+                content = 'You will get a DM regarding the status of your bot, so make sure you have them on.'
+            else:
+                content = 'Canceled'
+            await inter.response.edit_message(content=content, view=None)
+        view = Confirm(callback)
+
+        await inter.response.send_message(
+            f'You\'re going to add {bot.mention} on this server.\n'
+            'To agree, please press "Confirm" button',
+            view = view
+        )
+        await view.wait()
+        if view.value:
+            url = oauth_url(bot.id, guild=disnake.Object(DISNAKE_GUILD_ID), scopes=('bot', 'application.commands'))
+            await self.bot.get_partial_messageable(DISNAKE_ADDBOT_CHANNEL).send(
+                embed=disnake.Embed(
+                    description=f'[Invite]({url})',
+                    color=disnake.Colour.orange()
+                ).add_field(
+                    name='Reason',
+                    value=reason
+                )
+            )
+
 
 def setup(bot):
     bot.add_cog(Disnake(bot))

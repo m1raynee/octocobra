@@ -1,4 +1,6 @@
 import re
+from operator import attrgetter
+from typing import Any
 
 import disnake
 from disnake.ext import commands
@@ -73,11 +75,31 @@ async def tag_name(inter: disnake.ApplicationCommandInteraction, argument: str):
 
     return lower
 
-async def bot_user(inter: disnake.ApplicationCommandInteraction, argument: str):
-    if not argument.isdigit():
-        raise TypeError('This field must be a integer')
-    match = re.match(id_pattern, argument)
-    if match is None:
-        raise ValueError(f'{argument!r} is not an id')
-    id = match.group()
-    return int(id)
+def user(**attrs):
+    async def convert(inter: disnake.ApplicationCommandInteraction, argument: str):
+        if not argument.isdigit():
+            raise TypeError('This field must be a integer')
+        match = re.match(id_pattern, argument)
+        if match is None:
+            raise ValueError(f'{argument!r} is not an id')
+        id = int(match.group())
+        user = inter.bot.fetch_user(id)
+
+        # global -> local
+        _all = all
+        attrget = attrgetter
+
+        # Special case the single element call
+        if len(attrs) == 1:
+            k, v = attrs.popitem()
+            pred = attrget(k.replace('__', '.'))
+            if pred(user) == v:
+                return user
+            raise disnake.NotFound('User does not match requiroments.')
+
+        converted = [(attrget(attr.replace('__', '.')), value) for attr, value in attrs.items()]
+
+        if _all(pred(user) == value for pred, value in converted):
+            return user
+        raise disnake.NotFound('User does not match requiroments.')
+    return convert
