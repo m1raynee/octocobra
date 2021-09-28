@@ -266,7 +266,7 @@ class Disnake(commands.Cog, name='disnake'):
         e.add_field(name='Link', value=f'[Invite URL]({url})')
         e.add_field(name='ID', value=bot.id, inline=False)
 
-        view = AddBotView(inter.author._user, bot, listen_to=DISNAKE_MODS)
+        view = AddBotView(inter.author._user, bot, listen_to=DISNAKE_MODS, embed=e)
 
         msg = await self.bot.get_partial_messageable(DISNAKE_ADDBOT_CHANNEL).send(embed=e, view=view)
 
