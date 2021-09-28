@@ -1,8 +1,13 @@
-from typing import Any, Callable, Coroutine, Iterable, List, Union, Optional
+from typing import Any, Callable, Coroutine, Iterable, List, Tuple, Union, Optional
 import disnake
 
 class _BaseView(disnake.ui.View):
-    def __init__(self, *, listen_to: Iterable[int] = [], timeout: Optional[float] = 180):
+    def __init__(
+        self,
+        *,
+        listen_to: Iterable[int] = [],
+        timeout: Optional[float] = 180
+    ):
         if len(listen_to) == 0:
             raise TypeError('listen_to cannot be with zero length')
         super().__init__(timeout=timeout)
@@ -28,11 +33,14 @@ class Confirm(_BaseView):
             Coroutine[Any, Any, Any]
         ],
         *,
-        listen_to: Iterable[int]
+        listen_to: Iterable[int],
+        labels: Tuple[str, str] = ('Confirm', 'Cancel')
     ):
         super().__init__(listen_to=listen_to, timeout=180)
         self.value = None
         self.callback = callback
+
+        self.do_confirm.label, self.do_cancel.label = labels
 
     @disnake.ui.button(
         label='Confirm',

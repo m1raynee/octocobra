@@ -10,7 +10,7 @@ import disnake
 import aiohttp
 
 from .utils import fuzzy
-from .utils.views import Confirm
+from .utils.views import Confirm, _BaseView
 from .utils.converters import user
 from bot import DisnakeHelper
 
@@ -63,6 +63,38 @@ class SphinxObjectFileReader:
                 yield buf[:pos].decode('utf-8')
                 buf = buf[pos + 1:]
                 pos = buf.find(b'\n')
+
+class AddBotView(_BaseView):
+    def __init__(self, bot_owner: disnake.User, community_bot: disnake.User, *, listen_to):
+        super().__init__(listen_to=listen_to, timeout=None)
+        self.bot_owner = bot_owner
+        self.community_bot = community_bot
+
+    @disnake.ui.button(label='Accept', custom_id='addbot:accept', style=disnake.ButtonStyle.success)
+    async def do_accept(self, _, interaction: disnake.MessageInteraction):
+        msg = await interaction.original_message()
+        e = msg.embeds[0]
+        e.colour = disnake.Colour.green()
+
+        await interaction.response.edit_message(
+            content=f'{self.bot_owner.mention} will be aware about adding a bot.',
+            embed=e,
+            view=None
+        )
+        await self.bot_owner.send(f'Your bot {self.community_bot.mention} was invited to disnake server.')
+
+    @disnake.ui.button(label='Deny', custom_id='addbot:deny', style=disnake.ButtonStyle.danger)
+    async def do_accept(self, _, interaction: disnake.MessageInteraction):
+        msg = await interaction.original_message()
+        e = msg.embeds[0]
+        e.colour = disnake.Colour.red()
+
+        await interaction.response.edit_message(
+            content=f'{self.bot_owner.mention} will be aware about rejecting a bot.',
+            embed=e,
+            view=None
+        )
+        await self.bot_owner.send(f'Bot {self.community_bot.mention} invitation was rejected.')
 
 class Disnake(commands.Cog, name='disnake'):
     """Docs and other disnake's guild things."""
@@ -230,10 +262,15 @@ class Disnake(commands.Cog, name='disnake'):
 
         url = oauth_url(bot.id, guild=disnake.Object(DISNAKE_GUILD_ID), scopes=('bot', 'application.commands'))
         e = disnake.Embed(description=f'[Invite]({url})', color=disnake.Colour.orange())
-        e.add_field(name='Reason',value=reason)
         e.set_author(name=inter.author.display_name, icon_url=inter.author.display_avatar)
+        e.set_thumbnail(url=bot.avatar)
+        e.add_field(name='ID', value=bot.id, inline=False)
+        e.add_field(name='Name', value=bot.name)
+        e.add_field(name='Reason', value=reason)
 
-        msg = await self.bot.get_partial_messageable(DISNAKE_ADDBOT_CHANNEL).send(embed=e)
+        view = AddBotView(inter.author._user, bot, listen_to=(inter.author.id,))
+
+        msg = await self.bot.get_partial_messageable(DISNAKE_ADDBOT_CHANNEL).send(embed=e, view=view)
 
 
 def setup(bot):
