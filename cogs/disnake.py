@@ -16,6 +16,7 @@ from bot import DisnakeHelper
 
 DISNAKE_GUILD_ID = 808030843078836254
 DISNAKE_ADDBOT_CHANNEL = 808032994668576829
+DISNAKE_MODS = (301295716066787332,)
 
 DOC_KEYS = {
     'latest': 'https://disnake.readthedocs.io/en/latest/',
@@ -261,14 +262,14 @@ class Disnake(commands.Cog, name='disnake'):
             return
 
         url = oauth_url(bot.id, guild=disnake.Object(DISNAKE_GUILD_ID), scopes=('bot', 'application.commands'))
-        e = disnake.Embed(description=f'[Invite]({url})', color=disnake.Colour.orange())
+        e = disnake.Embed(description=reason, color=disnake.Colour.orange())
         e.set_author(name=inter.author.display_name, icon_url=inter.author.display_avatar)
         e.set_thumbnail(url=bot.avatar)
+        e.add_field(name='Name', value=str(bot))
+        e.add_field(name='Link', value=f'[Invite URL]({url})')
         e.add_field(name='ID', value=bot.id, inline=False)
-        e.add_field(name='Name', value=bot.name)
-        e.add_field(name='Reason', value=reason)
 
-        view = AddBotView(inter.author._user, bot, listen_to=(inter.author.id,))
+        view = AddBotView(inter.author._user, bot, listen_to=DISNAKE_MODS)
 
         msg = await self.bot.get_partial_messageable(DISNAKE_ADDBOT_CHANNEL).send(embed=e, view=view)
 
