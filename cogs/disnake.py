@@ -11,11 +11,13 @@ import disnake
 import aiohttp
 
 from .utils import fuzzy
+from .utils.emojis import choice_marks
 from .utils.views import Confirm, _BaseView
 from .utils.converters import user
 from bot import DisnakeHelper
 
 DISNAKE_GUILD_ID = 808030843078836254
+DISNAKE_BOT_ROLE = 888451879753904138
 DISNAKE_ADDBOT_CHANNEL = 808032994668576829
 DISNAKE_MODS = (301295716066787332, 428483942329614336)
 
@@ -240,8 +242,8 @@ class Disnake(commands.Cog, name='disnake'):
         e.add_field(name='Author ID', value=inter.author.id)
 
         msg = await self.bot.get_partial_messageable(DISNAKE_ADDBOT_CHANNEL).send(embed=e)
-        await msg.add_reaction(':agree_mark:892770746013724683')
-        await msg.add_reaction(':deny_mark:892770746034704384')
+        for r in choice_marks:
+            await msg.add_reaction(r)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: disnake.RawReactionActionEvent):
@@ -260,9 +262,9 @@ class Disnake(commands.Cog, name='disnake'):
         if (
             payload.emoji.id in (892770746013724683, 892770746034704384)
             and len(message.embeds) != 0
-            and embed.colour != disnake.Colour.orange()
+            and embed.colour == disnake.Colour.orange()
         ):
-            embed.add_field(name='Responding mod', value=f'<@{payload.user_id}>')
+            embed.add_field(name='Responding admin', value=f'<@{payload.user_id}>')
             bot_id = int(embed.fields[2].value)
             member_id = int(embed.fields[3].value)
             if payload.emoji.id == 892770746013724683:
@@ -276,8 +278,16 @@ class Disnake(commands.Cog, name='disnake'):
             await message.edit(content=add_content)
             await message.clear_reactions()
 
-            await (await self.bot.get_or_fetch_user(member_id)).send(user_cotnent)
+            await (await self.bot.getch_user(member_id)).send(user_cotnent)
+    
+    @commands.Cog.listener()
+    async def on_member_join(self, member: disnake.Member):
+        if member.guild.id != DISNAKE_GUILD_ID:
+            return
+        if not member.bot:
+            return
 
+        await member.add_roles(disnake.Object(DISNAKE_BOT_ROLE))
 
 def setup(bot):
     bot.add_cog(Disnake(bot))
