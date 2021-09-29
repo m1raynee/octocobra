@@ -258,7 +258,7 @@ class Disnake(commands.Cog, name='disnake'):
         if not view.value:
             return
 
-        url = oauth_url(bot.id, guild=disnake.Object(DISNAKE_GUILD_ID), scopes=('bot', 'application.commands'))
+        url = oauth_url(bot.id, guild=disnake.Object(DISNAKE_GUILD_ID), scopes=('bot', 'applications.commands'))
         e = disnake.Embed(description=reason, color=disnake.Colour.orange())
         e.set_author(name=inter.author.display_name, icon_url=inter.author.display_avatar)
         e.set_thumbnail(url=bot.avatar)
