@@ -245,12 +245,13 @@ class Disnake(commands.Cog, name='disnake'):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: disnake.RawReactionActionEvent):
-        if (
-            payload.channel_id != DISNAKE_ADDBOT_CHANNEL 
-            and not payload.member.guild_permissions.administrator
-        ):
+        if payload.user_id == self.bot.user.id:
             return
-        message = await self.bot.get_partial_messageable(DISNAKE_ADDBOT_CHANNEL).fetch_message(payload.message_id)
+        if not (
+            payload.channel_id == DISNAKE_ADDBOT_CHANNEL 
+            and payload.member.guild_permissions.administrator
+        ): return
+        message = self.bot.get_channel(DISNAKE_ADDBOT_CHANNEL).fetch_message(payload.message_id)
         if message.author.id != self.bot.user.id:
             return
 
@@ -268,7 +269,9 @@ class Disnake(commands.Cog, name='disnake'):
                 add_content = f'<@{bot_id}> will be aware about rejecting a bot.'
                 user_cotnent = f'<@{member_id}>\'s invitation was rejected.'
             await message.edit(content=add_content)
-            await self.bot.get_partial_messageable(member_id).send(user_cotnent)
+            await message.clear_reactions()
+
+            await self.bot.get_or_fetch_user(member_id).send(user_cotnent)
 
 
 def setup(bot):
