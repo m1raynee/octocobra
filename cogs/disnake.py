@@ -3,6 +3,7 @@ import re
 import os
 from typing import cast
 import zlib
+from contextlib import suppress
 
 from disnake.ext import commands
 from disnake.utils import oauth_url
@@ -64,35 +65,6 @@ class SphinxObjectFileReader:
                 yield buf[:pos].decode('utf-8')
                 buf = buf[pos + 1:]
                 pos = buf.find(b'\n')
-
-class AddBotView(_BaseView):
-    def __init__(self, bot_owner: disnake.User, community_bot: disnake.User, *, listen_to, embed):
-        super().__init__(listen_to=listen_to, timeout=None)
-        self.bot_owner = bot_owner
-        self.community_bot = community_bot
-        self.embed = embed
-
-    @disnake.ui.button(label='Accept', style=disnake.ButtonStyle.success)
-    async def do_accept(self, _, interaction: disnake.MessageInteraction):
-        self.embed.colour = disnake.Colour.green()
-
-        await interaction.response.edit_message(
-            content=f'{self.bot_owner.mention} will be aware about adding a bot.',
-            embed=self.embed,
-            view=None
-        )
-        await self.bot_owner.send(f'Your bot {self.community_bot.mention} was invited to disnake server.')
-
-    @disnake.ui.button(label='Deny', style=disnake.ButtonStyle.danger)
-    async def do_accept(self, _, interaction: disnake.MessageInteraction):
-        self.embed.colour = disnake.Colour.red()
-
-        await interaction.response.edit_message(
-            content=f'{self.bot_owner.mention} will be aware about rejecting a bot.',
-            embed=self.embed,
-            view=None
-        )
-        await self.bot_owner.send(f'Bot {self.community_bot.mention} invitation was rejected.')
 
 class Disnake(commands.Cog, name='disnake'):
     """Docs and other disnake's guild things."""
@@ -265,10 +237,36 @@ class Disnake(commands.Cog, name='disnake'):
         e.add_field(name='Name', value=str(bot))
         e.add_field(name='Link', value=f'[Invite URL]({url})')
         e.add_field(name='ID', value=bot.id, inline=False)
+        e.add_field(name='Author ID', value=inter.author.id)
 
-        view = AddBotView(inter.author._user, bot, listen_to=DISNAKE_MODS, embed=e)
+        await self.bot.get_partial_messageable(DISNAKE_ADDBOT_CHANNEL).send(embed=e)
 
-        msg = await self.bot.get_partial_messageable(DISNAKE_ADDBOT_CHANNEL).send(embed=e, view=view)
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload: disnake.RawReactionActionEvent):
+        if (
+            payload.channel_id != DISNAKE_ADDBOT_CHANNEL 
+            and not payload.member.guild_permissions.administrator
+        ):
+            return
+        message = await self.bot.get_partial_messageable(DISNAKE_ADDBOT_CHANNEL).fetch_message(payload.message_id)
+        if message.author.id != self.bot.user.id:
+            return
+
+        if payload.emoji.id in (892770746013724683, 892770746034704384) and len(message.embeds) != 0:
+            embed = message.embeds[0]
+            self.embed.add_field(name='Responding mod', value=f'<@{payload.user_id}>')
+            bot_id = int(embed.fields[2].value)
+            member_id = int(embed.fields[3].value)
+            if payload.emoji.id == 892770746013724683:
+                embed.colour = disnake.Colour.green()
+                add_content = f'<@{bot_id}> will be aware about adding a bot.'
+                user_cotnent = f'Your bot <@{member_id}> was invited to disnake server.'
+            else:
+                embed.colour = disnake.Colour.red()
+                add_content = f'<@{bot_id}> will be aware about rejecting a bot.'
+                user_cotnent = f'<@{member_id}>\'s invitation was rejected.'
+            await message.edit(content=add_content)
+            await self.bot.get_partial_messageable(member_id).send(user_cotnent)
 
 
 def setup(bot):
