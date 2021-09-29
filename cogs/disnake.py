@@ -251,7 +251,7 @@ class Disnake(commands.Cog, name='disnake'):
             payload.channel_id == DISNAKE_ADDBOT_CHANNEL 
             and payload.member.guild_permissions.administrator
         ): return
-        message = self.bot.get_channel(DISNAKE_ADDBOT_CHANNEL).fetch_message(payload.message_id)
+        message = await self.bot.get_channel(DISNAKE_ADDBOT_CHANNEL).fetch_message(payload.message_id)
         if message.author.id != self.bot.user.id:
             return
 
