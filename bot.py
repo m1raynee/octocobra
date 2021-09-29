@@ -73,5 +73,18 @@ class DisnakeHelper(commands.Bot):
 
         else:
             return await super().on_slash_command_error(interaction, exception)
+
+    async def on_error(self, event_method: str, *args, **kwargs) -> None:
+        await self.owner.send((
+                '```py\n'
+                f'{event_method = }\n'
+                f'{args = }\n'
+                f'{kwargs = }\n'
+                '```'
+            ))
+        tb = traceback.format_exc()
+        await self.owner.send(**(await safe_send_prepare(f'```py\n{tb}\n```')))
+        return await super().on_error(event_method, *args, **kwargs)
+
     def ids(self, *id_list):
         return list(set((*id_list, *self.owner_ids)))
