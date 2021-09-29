@@ -254,7 +254,7 @@ class Disnake(commands.Cog, name='disnake'):
 
         if payload.emoji.id in (892770746013724683, 892770746034704384) and len(message.embeds) != 0:
             embed = message.embeds[0]
-            self.embed.add_field(name='Responding mod', value=f'<@{payload.user_id}>')
+            embed.add_field(name='Responding mod', value=f'<@{payload.user_id}>')
             bot_id = int(embed.fields[2].value)
             member_id = int(embed.fields[3].value)
             if payload.emoji.id == 892770746013724683:
