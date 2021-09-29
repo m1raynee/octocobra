@@ -240,8 +240,8 @@ class Disnake(commands.Cog, name='disnake'):
         e.add_field(name='Author ID', value=inter.author.id)
 
         msg = await self.bot.get_partial_messageable(DISNAKE_ADDBOT_CHANNEL).send(embed=e)
-        msg.add_reaction(':agree_mark:892770746013724683')
-        msg.add_reaction(':deny_mark:892770746034704384')
+        await msg.add_reaction(':agree_mark:892770746013724683')
+        await msg.add_reaction(':deny_mark:892770746034704384')
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: disnake.RawReactionActionEvent):
