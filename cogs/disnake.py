@@ -247,16 +247,21 @@ class Disnake(commands.Cog, name='disnake'):
     async def on_raw_reaction_add(self, payload: disnake.RawReactionActionEvent):
         if payload.user_id == self.bot.user.id:
             return
-        if not (
-            payload.channel_id == DISNAKE_ADDBOT_CHANNEL 
-            and payload.member.guild_permissions.administrator
+        if (
+            payload.channel_id != DISNAKE_ADDBOT_CHANNEL 
+            and not payload.member.guild_permissions.administrator
         ): return
+
         message = await self.bot.get_channel(DISNAKE_ADDBOT_CHANNEL).fetch_message(payload.message_id)
         if message.author.id != self.bot.user.id:
             return
 
-        if payload.emoji.id in (892770746013724683, 892770746034704384) and len(message.embeds) != 0:
-            embed = message.embeds[0]
+        embed = message.embeds[0]
+        if (
+            payload.emoji.id in (892770746013724683, 892770746034704384)
+            and len(message.embeds) != 0
+            and embed.colour != disnake.Colour.orange()
+        ):
             embed.add_field(name='Responding mod', value=f'<@{payload.user_id}>')
             bot_id = int(embed.fields[2].value)
             member_id = int(embed.fields[3].value)
@@ -271,7 +276,7 @@ class Disnake(commands.Cog, name='disnake'):
             await message.edit(content=add_content)
             await message.clear_reactions()
 
-            await self.bot.get_or_fetch_user(member_id).send(user_cotnent)
+            await (await self.bot.get_or_fetch_user(member_id)).send(user_cotnent)
 
 
 def setup(bot):
