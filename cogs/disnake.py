@@ -278,7 +278,7 @@ class Disnake(commands.Cog, name='disnake'):
             await message.edit(content=add_content)
             await message.clear_reactions()
 
-            await (await self.bot.getch_user(member_id)).send(user_cotnent)
+            await (await self.bot.get_or_fetch_user(member_id)).send(user_cotnent)
     
     @commands.Cog.listener()
     async def on_member_join(self, member: disnake.Member):
