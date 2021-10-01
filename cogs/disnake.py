@@ -274,7 +274,7 @@ class Disnake(commands.Cog, name='disnake'):
                 embed.colour = disnake.Colour.red()
                 user_cotnent = f'<@{member_id}>\'s invitation was rejected.'
                 add_content = f'<@{bot_id}> will be aware about rejecting a bot.'
-            await message.edit(content=add_content)
+            await message.edit(content=add_content, embed=embed)
             await message.clear_reactions()
 
             await (await self.bot.get_or_fetch_user(member_id)).send(user_cotnent)
