@@ -264,16 +264,16 @@ class Disnake(commands.Cog, name='disnake'):
             and (embed := message.embeds[0]).colour == disnake.Colour.orange()
         ):
             embed.add_field(name='Responding admin', value=f'<@{payload.user_id}>')
-            member_id = int(embed.fields[2].value)
-            bot_id = int(embed.fields[3].value)
+            bot_id = int(embed.fields[2].value)
+            member_id = int(embed.fields[3].value)
             if payload.emoji.id == 892770746013724683:
                 embed.colour = disnake.Colour.green()
-                user_cotnent = f'Your bot <@{member_id}> was invited to disnake server.'
-                add_content = f'<@{bot_id}> will be aware about adding a bot.'
+                user_cotnent = f'Your bot <@{bot_id}> was invited to disnake server.'
+                add_content = f'<@{member_id}> will be aware about adding a bot.'
             else:
                 embed.colour = disnake.Colour.red()
-                user_cotnent = f'<@{member_id}>\'s invitation was rejected.'
-                add_content = f'<@{bot_id}> will be aware about rejecting a bot.'
+                user_cotnent = f'<@{bot_id}>\'s invitation was rejected.'
+                add_content = f'<@{member_id}> will be aware about rejecting a bot.'
             await message.edit(content=add_content, embed=embed)
             await message.clear_reactions()
 
