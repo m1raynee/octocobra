@@ -235,7 +235,7 @@ class Disnake(commands.Cog, name='disnake'):
         url = oauth_url(bot.id, guild=disnake.Object(DISNAKE_GUILD_ID), scopes=('bot', 'applications.commands'))
         e = disnake.Embed(description=reason, color=disnake.Colour.orange())
         e.set_author(name=inter.author.display_name, icon_url=inter.author.display_avatar)
-        e.set_thumbnail(url=bot.avatar)
+        e.set_thumbnail(url=bot.display_avatar)
         e.add_field(name='Name', value=str(bot))
         e.add_field(name='Link', value=f'[Invite URL]({url})')
         e.add_field(name='ID', value=bot.id, inline=False)
