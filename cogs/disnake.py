@@ -224,7 +224,7 @@ class Disnake(commands.Cog, name='disnake'):
 
         view = Confirm(callback, listen_to=(inter.author.id,))
         await inter.response.send_message(
-            f'You\'re going to add {bot.mention} on this server.\n'
+            f'You\'re going to add {bot} on this server.\n'
             'To agree, please press "Confirm" button',
             view = view
         )
