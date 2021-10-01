@@ -247,22 +247,21 @@ class Disnake(commands.Cog, name='disnake'):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: disnake.RawReactionActionEvent):
+        if payload.channel_id != DISNAKE_ADDBOT_CHANNEL:
+            return
+        if not (payload.member and payload.member.guild_permissions.administrator):
+            return
         if payload.user_id == self.bot.user.id:
             return
-        if (
-            payload.channel_id != DISNAKE_ADDBOT_CHANNEL 
-            and not payload.member.guild_permissions.administrator
-        ): return
 
         message = await self.bot.get_channel(DISNAKE_ADDBOT_CHANNEL).fetch_message(payload.message_id)
         if message.author.id != self.bot.user.id:
             return
 
-        embed = message.embeds[0]
         if (
             payload.emoji.id in (892770746013724683, 892770746034704384)
             and len(message.embeds) != 0
-            and embed.colour == disnake.Colour.orange()
+            and (embed := message.embeds[0]).colour == disnake.Colour.orange()
         ):
             embed.add_field(name='Responding admin', value=f'<@{payload.user_id}>')
             bot_id = int(embed.fields[2].value)
