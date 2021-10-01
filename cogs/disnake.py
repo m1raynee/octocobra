@@ -249,7 +249,7 @@ class Disnake(commands.Cog, name='disnake'):
     async def on_raw_reaction_add(self, payload: disnake.RawReactionActionEvent):
         if payload.channel_id != DISNAKE_ADDBOT_CHANNEL:
             return
-        if not (payload.member and payload.member.guild_permissions.administrator):
+        if not (payload.member and payload.member.guild_permissions.manage_guild):
             return
         if payload.user_id == self.bot.user.id:
             return
