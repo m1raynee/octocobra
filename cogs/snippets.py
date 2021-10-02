@@ -169,6 +169,10 @@ class Snippets(commands.Cog):
         destination = message.channel
 
         if 0 < len(snipets) <= 2000 and snipets.count('\n') <= 15:
+            with suppress(disnake.NotFound):
+                await message.edit(suppress=True)
+            kwargs = {'content': snipets}
+
             if len(snipets) > 1000 and message.channel.id not in (808035299094691882,889872309639315497):
                 destination = self.bot.get_channel(808035299094691882)
             
@@ -176,10 +180,11 @@ class Snippets(commands.Cog):
                     'The snippet you tried to send was too long. '
                     f'Please see {destination.mention} for the full snippet.'
                 )
-            
+            else:
+                kwargs['reference'] = message
             await wait_for_deletion(
                 message.author.id,
-                {'content': snipets},
+                {'content': snipets, },
                 destination
             )
 
