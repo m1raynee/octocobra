@@ -61,3 +61,15 @@ class Confirm(_BaseView):
     async def finalize(self, inter):
         await self.callback(self.value, inter)
         self.stop()
+
+class Delete(_BaseView):
+    def __init__(self, *, listen_to: Iterable[int] = [], timeout: Optional[float] = 180):
+        super().__init__(listen_to=listen_to, timeout=timeout)
+    
+    @disnake.ui.button(
+        label='Delete',
+        emoji='\N{WASTEBASKET}'
+    )
+    async def delete_button(self, interaction: disnake.MessageInteraction, button):
+        await interaction.response.defer()
+        await interaction.message.delete()

@@ -1,7 +1,7 @@
 import io
 import re
 import os
-from typing import cast
+from typing import List, Union, cast
 import zlib
 from contextlib import suppress
 
@@ -27,6 +27,7 @@ DOC_KEYS = {
     'dislash': 'https://dislashpy.readthedocs.io/en/latest/',
     'dpy-master': 'http://discordpy.readthedocs.io/en/master/'
 }
+
 Branches = commands.option_enum(
     {
         'disnake latest': 'latest',
@@ -73,6 +74,9 @@ class Disnake(commands.Cog, name='disnake'):
 
     def __init__(self, bot: DisnakeHelper):
         self.bot = bot
+
+    async def rtfm_autocomp(inter, value: str):
+        ...
 
     def parse_object_inv(self, stream: SphinxObjectFileReader, url: str):
         # key: URL
@@ -143,7 +147,7 @@ class Disnake(commands.Cog, name='disnake'):
 
         self._cache = cache
     
-    async def do_rtfm(self, inter: disnake.ApplicationCommandInteraction, key: str, obj):
+    async def do_rtfm(self, inter: disnake.ApplicationCommandInteraction, key: str, obj, keys = False) -> Union[str, List[str]]:
         if not hasattr(self, '_cache'):
             await self.prepare_cache()
 
@@ -151,9 +155,9 @@ class Disnake(commands.Cog, name='disnake'):
             await inter.response.send_message(DOC_KEYS[key])
             return
 
-        obj = re.sub(r'^(?:disnake\.(?:ext\.)?)?(?:commands\.)?(.+)', r'\1', obj)
+        obj = re.sub(r'^(?:(?:discord|disnake)\.(?:ext\.)?)?(?:commands\.)?(?:dislash\.)?(.+)', r'\1', obj)
 
-        if key.startswith(('latest', 'dpy-master')):
+        if key in ('latest', 'dpy-master'):
             # point the abc.Messageable types properly:
             q = obj.lower()
             for name in dir(disnake.abc.Messageable):
@@ -184,7 +188,7 @@ class Disnake(commands.Cog, name='disnake'):
     async def rtfm(
         self,
         inter,
-        object: str,
+        object: str = commands.param(autocomp=rtfm_autocomp),
         language: Branches = commands.param('latest')
     ):
         """
@@ -287,6 +291,7 @@ class Disnake(commands.Cog, name='disnake'):
             return
 
         await member.add_roles(disnake.Object(DISNAKE_BOT_ROLE))
+
 
 def setup(bot):
     bot.add_cog(Disnake(bot))
