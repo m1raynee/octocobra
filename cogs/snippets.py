@@ -127,7 +127,7 @@ class Snippets(commands.Cog):
         )
         return self._snippet_to_codeblock(file_contents, file_path, start_line, end_line)
 
-    async def _fetch_github_gist_snippet(
+    async def fetch_github_gist(
         self,
         gist_id: str,
         revision: str,
