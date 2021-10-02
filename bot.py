@@ -58,7 +58,7 @@ class DisnakeHelper(commands.Bot):
         elif not interaction.application_command.has_error_handler() or interaction.application_command.cog.has_slash_error_handler():
             now = disnake.utils.utcnow().timestamp()
             content = f'Unknown error happen. Contact m1raynee. Error timestamp: {now}'
-            m(content, ephemeral=True)
+            await m(content, ephemeral=True)
             tb = '\n'.join(traceback.format_exception(type(exception), exception, exception.__traceback__))
             await self.owner.send((
                 '```py\n'
