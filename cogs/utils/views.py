@@ -70,6 +70,6 @@ class Delete(_BaseView):
         label='Delete',
         emoji='\N{WASTEBASKET}'
     )
-    async def delete_button(self, interaction: disnake.MessageInteraction, button):
+    async def delete_button(self, _, interaction: disnake.MessageInteraction):
         await interaction.response.defer()
         await interaction.message.delete()
