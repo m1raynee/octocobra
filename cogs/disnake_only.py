@@ -147,7 +147,7 @@ class Disnake(commands.Cog, name='disnake'):
 
         self._cache = cache
     
-    async def do_rtfm(self, inter: disnake.ApplicationCommandInteraction, key: str, obj, keys = False) -> Union[str, List[str]]:
+    async def do_rtfm(self, inter: disnake.ApplicationCommandInteraction, key: str, obj, keys = False):# -> Union[str, List[str]]:
         if not hasattr(self, '_cache'):
             await self.prepare_cache()
 
@@ -188,7 +188,7 @@ class Disnake(commands.Cog, name='disnake'):
     async def rtfm(
         self,
         inter,
-        object: str = commands.param(autocomp=rtfm_autocomp),
+        object: str,# = commands.param(autocomp=rtfm_autocomp),
         language: Branches = commands.param('latest')
     ):
         """

@@ -83,7 +83,6 @@ class DisnakeHelper(commands.Bot):
             ))
         tb = traceback.format_exc()
         await self.owner.send(**(await safe_send_prepare(f'```py\n{tb}\n```')))
-        return await super().on_error(event_method, *args, **kwargs)
 
     def ids(self, *id_list):
         return list(set((*id_list, *self.owner_ids)))
