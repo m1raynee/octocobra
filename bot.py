@@ -39,7 +39,9 @@ class DisnakeHelper(commands.Bot):
             try:
                 self.load_extension(ext)
             except Exception as e:
+                tb = '\n'.join(traceback.format_exception(None, e, e.__traceback__))
                 print(f'Could not load extension {ext} due to {e.__class__.__name__}: {e}')
+                print(tb)
         
         self.loop.run_until_complete(db.init())
         self.http_session = aiohttp.ClientSession(loop=self.loop)
