@@ -81,7 +81,6 @@ class PaginatorView(disnake.ui.View):
         self.go_to_next_page.label = str(page_number + 2)
         self.go_to_next_page.disabled = False
         self.go_to_previous_page.disabled = False
-        self.go_to_first_page.disabled = False
 
         max_pages = self.source.get_max_pages()
         if max_pages is not None:
@@ -181,7 +180,6 @@ class PaginatorView(disnake.ui.View):
                 msg = await self.interaction.bot.wait_for('message', check=message_check, timeout=30.0)
             except asyncio.TimeoutError:
                 await interaction.followup.send('Took too long.', ephemeral=True)
-                await asyncio.sleep(5)
             else:
                 page = int(msg.content)
                 await msg.delete()

@@ -1,9 +1,7 @@
 import io
 import re
 import os
-from typing import List, Union, cast
 import zlib
-from contextlib import suppress
 
 from disnake.ext import commands
 from disnake.utils import oauth_url
@@ -12,7 +10,7 @@ import aiohttp
 
 from .utils import fuzzy
 from .utils.emojis import choice_marks
-from .utils.views import Confirm, _BaseView
+from .utils.views import Confirm
 from .utils.converters import user
 from bot import DisnakeHelper
 
