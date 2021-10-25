@@ -219,8 +219,7 @@ class Reminder(commands.Cog):
             when.dt, 'reminder', inter.author.id,
             inter.channel.id, reason,
             created=inter.created_at,
-            message_id=msg.id,
-            author_id=inter.author.id
+            message_id=msg.id
         )
 
     @reminder.sub_command(name='list')
