@@ -124,7 +124,7 @@ class User(_checker):
 # usage: arg: str = commands.param(converter=User(bot=True))
 
 class Time:
-    settings={'PREFER_DATES_FROM': 'future'}
+    settings={'PREFER_DATES_FROM': 'future', 'RETURN_AS_TIMEZONE_AWARE': True}
     def __init__(self, inter: disnake.ApplicationCommandInteraction, argument):
         now = inter.created_at
         self.argument = argument
