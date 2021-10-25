@@ -11,7 +11,7 @@ import aiohttp
 from .utils import fuzzy
 from .utils.emojis import choice_marks
 from .utils.views import Confirm
-from .utils.converters import User
+from .utils.converters import UserCondition
 from bot import DisnakeHelper
 
 DISNAKE_GUILD_ID = 808030843078836254
@@ -202,7 +202,7 @@ class Disnake(commands.Cog, name='disnake'):
     async def addbot(
         self,
         inter: disnake.ApplicationCommandInteraction,
-        bot_id: str = commands.param(conv=User(bot=True)),
+        bot_id: str = commands.param(conv=UserCondition(bot=True)),
         reason: str = commands.param()
     ):
         """

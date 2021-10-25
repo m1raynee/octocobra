@@ -99,7 +99,7 @@ class _checker:
             return obj
         raise disnake.NotFound(f"{name} doesn't match the conditions.")
 
-class User(_checker):
+class UserCondition(_checker):
     def __init__(self, **attrs) -> None:
         super().__init__()
         self.attrs = attrs
