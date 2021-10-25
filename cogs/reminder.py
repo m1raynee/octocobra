@@ -272,7 +272,7 @@ class Reminder(commands.Cog):
 
         await inter.response.send_message('Successfully deleted reminder.', ephemeral=True)
 
-    @reminder.command(name='clear')
+    @reminder.sub_command(name='clear')
     async def reminder_clear(self, inter: disnake.ApplicationCommandInteraction):
         """Clears all reminders you have set."""
 
