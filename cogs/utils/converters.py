@@ -114,11 +114,9 @@ class UserCondition(_checker):
         if match is None:
             raise ValueError(f'{argument!r} is not an id')
         self.id = int(match.group())
+        return self.convert()
     
-    async def __await__(self):
-        if self.inter in None or self.id is None:
-            raise TypeError("you're fucked up")
-
+    async def convert(self):
         user = await self.inter.bot.fetch_user(self.id)
         return self.check(user, self.attrs)
 # usage: arg: str = commands.param(converter=User(bot=True))
