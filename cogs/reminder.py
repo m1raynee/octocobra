@@ -214,11 +214,12 @@ class Reminder(commands.Cog):
 
 
         await inter.response.send_message(f"Alright {inter.author.mention}, {disnake.utils.format_dt(when.dt, 'R')}: {reason}")
+        msg = await inter.original_message()
         await self.create_timer(
             when.dt, 'reminder', inter.author.id,
             inter.channel.id, reason,
             created=inter.created_at,
-            message_id=inter.message.id
+            message_id=msg.id
         )
 
     @reminder.sub_command(name='list')
