@@ -164,7 +164,14 @@ class Reminder(commands.Cog):
         when = when.astimezone(datetime.timezone.utc).replace(tzinfo=None)
         now = now.astimezone(datetime.timezone.utc).replace(tzinfo=None)
 
-        timer = Timer.temporary(event=event, args=args, kwargs=kwargs, expires=when, created=now)
+        timer = Timer.temporary(
+            event=event,
+            args=args,
+            kwargs=kwargs,
+            expires=when,
+            created=now,
+            author_id=author_id
+        )
         delta = (when - now).total_seconds()
         if delta <= 60:
             # a shortcut for small timers
