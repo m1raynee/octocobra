@@ -127,7 +127,7 @@ class Reminder(commands.Cog):
         event_name = f'{timer.event}_timer_complete'
         self.bot.dispatch(event_name, timer)
 
-    async def create_timer(self, when: datetime.datetime, event: str, author_id: int, *args, **kwargs):
+    async def create_timer(self, when: datetime.datetime, event: str, author_id: int, *args, **kwargs) -> Timer:
         """
         Creates a timer.
         
@@ -219,7 +219,7 @@ class Reminder(commands.Cog):
             created=inter.created_at,
             message_id=inter.message.id
         )
-        await inter.response.send_message(f"Alright {inter.author.mention}, {timer.human_delta}: {reason}")
+        await inter.response.send_message(f"Alright {inter.author.mention}, {timer.expires_delta}: {reason}")
 
     @reminder.sub_command(name='list')
     async def reminder_list(self, inter: disnake.ApplicationCommandInteraction):
@@ -302,7 +302,7 @@ class Reminder(commands.Cog):
         await inter.response.send_message(f'Are you sure you want to delete {total} reminder{"s" if total > 1 else ""}?', view=view)
 
     @commands.Cog.listener()
-    async def on_reminder_timer_complete(self, timer):
+    async def on_reminder_timer_complete(self, timer: Timer):
         channel_id, message = timer.args
         author_id = timer.author_id
 
@@ -313,7 +313,7 @@ class Reminder(commands.Cog):
 
         guild_id = channel.guild.id if isinstance(channel, (disnake.TextChannel, disnake.Thread)) else '@me'
         message_id = timer.kwargs.get('message_id')
-        msg = f'<@{author_id}>, {timer.human_delta}: {message}'
+        msg = f'<@{author_id}>, {timer.created_at}: {message}'
         view = disnake.utils.MISSING
 
         if message_id:
