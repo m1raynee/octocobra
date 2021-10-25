@@ -3,6 +3,10 @@ apps:
     models:
       - cogs.utils.db.tags
     default_connection: master
+  remind:
+    models:
+      - cogs.utils.db.remind
+    default_connection: master
 connections:
   master:
     sqlite://data/db.sqlite
