@@ -130,7 +130,8 @@ class PaginatorView(disnake.ui.View):
         page = await self.source.get_page(0)
         kwargs = await self._get_kwargs_from_page(page)
         self._update_labels(0)
-        self.message = await self.interaction.response.send_message(**kwargs, view=self)
+        await self.interaction.response.send_message(**kwargs, view=self)
+        self.message = await self.interaction.original_message()
 
     @disnake.ui.button(label='≪', style=disnake.ButtonStyle.grey)
     async def go_to_first_page(self, button: disnake.ui.Button, interaction: disnake.Interaction):

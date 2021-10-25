@@ -1,11 +1,11 @@
-from typing import Any, Callable, Coroutine, Iterable, List, Tuple, Union, Optional
+from typing import Any, Callable, Coroutine, Sequence, Tuple, Union, Optional
 import disnake
 
 class _BaseView(disnake.ui.View):
     def __init__(
         self,
         *,
-        listen_to: Iterable[int] = [],
+        listen_to: Sequence[int] = [],
         timeout: Optional[float] = 180
     ):
         if len(listen_to) == 0:
@@ -33,7 +33,7 @@ class Confirm(_BaseView):
             Coroutine[Any, Any, Any]
         ],
         *,
-        listen_to: Iterable[int] = [],
+        listen_to: Sequence[int] = [],
         labels: Tuple[str, str] = ('Confirm', 'Cancel')
     ):
         super().__init__(listen_to=listen_to)
@@ -63,7 +63,7 @@ class Confirm(_BaseView):
         self.stop()
 
 class Delete(_BaseView):
-    def __init__(self, *, listen_to: Iterable[int] = [], timeout: Optional[float] = 180):
+    def __init__(self, *, listen_to: Sequence[int] = [], timeout: Optional[float] = 180):
         super().__init__(listen_to=listen_to, timeout=timeout)
     
     @disnake.ui.button(
@@ -71,5 +71,4 @@ class Delete(_BaseView):
         emoji='\N{WASTEBASKET}'
     )
     async def delete_button(self, _, interaction: disnake.MessageInteraction):
-        await interaction.response.defer()
-        await interaction.message.delete()
+        await (await interaction.original_message()).delete()
