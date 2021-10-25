@@ -11,6 +11,7 @@ initial_extensions = (
     'cogs.tags',  # cogs
     'cogs.disnake_only',
     'cogs.snippets',
+    'cogs.reminder',
     # 'cogs.meta',
     'jishaku',  # community extensions
 )

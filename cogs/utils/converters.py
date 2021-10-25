@@ -1,9 +1,12 @@
+from abc import abstractmethod
 import re
+import datetime
 from operator import attrgetter
-from typing import Any
 
 import disnake
 from disnake.ext import commands
+
+import dateparser
 
 id_pattern = re.compile(r'[0-9]{15,19}')
 
@@ -75,17 +78,10 @@ async def tag_name(inter: disnake.ApplicationCommandInteraction, argument: str):
 
     return lower
 
-def user(**attrs):
-    async def convert(inter: disnake.ApplicationCommandInteraction, argument: str):
-        if not argument.isdigit():
-            raise TypeError('This field must be a integer')
-        match = re.match(id_pattern, argument)
-        if match is None:
-            raise ValueError(f'{argument!r} is not an id')
-        id = int(match.group())
-        user = await inter.bot.fetch_user(id)
+class _checker:
+    def check(self, obj: object, attrs):
+        name = obj.__class__.__name__
 
-        # global -> local
         _all = all
         attrget = attrgetter
 
@@ -93,13 +89,70 @@ def user(**attrs):
         if len(attrs) == 1:
             k, v = attrs.popitem()
             pred = attrget(k.replace('__', '.'))
-            if pred(user) == v:
-                return user
-            raise disnake.NotFound('User does not match requiroments.')
+            if pred(obj) == v:
+                return obj
+            raise disnake.NotFound(f"{name} doesn't match the conditions.")
 
-        converted = [(attrget(attr.replace('__', '.')), value) for attr, value in attrs.items()]
+        converted = [(attrget(attr.replace('__', '.')), value) for attr, value in self.attrs.items()]
 
-        if _all(pred(user) == value for pred, value in converted):
-            return user
-        raise disnake.NotFound('User does not match requiroments.')
-    return convert
+        if _all(pred(obj) == value for pred, value in converted):
+            return obj
+        raise disnake.NotFound(f"{name} doesn't match the conditions.")
+
+class User(_checker):
+    def __init__(self, **attrs) -> None:
+        super().__init__()
+        self.attrs = attrs
+        self.inter = None
+        self.id = None
+    
+    def __call__(self, inter: disnake.ApplicationCommandInteraction, argument: str) -> None:
+        self.inter = inter
+        if not argument.isdigit():
+            raise TypeError('This field must be a integer')
+        match = re.match(id_pattern, argument)
+        if match is None:
+            raise ValueError(f'{argument!r} is not an id')
+        self.id = int(match.group())
+    
+    async def __await__(self):
+        if self.inter in None or self.id is None:
+            raise TypeError("you're fucked up")
+
+        user = await self.inter.bot.fetch_user(self.id)
+        return self.check(user, self.attrs)
+# usage: arg: str = commands.param(converter=User(bot=True))
+
+class Time:
+    settings={'PREFER_DATES_FROM': 'future'}
+    def __init__(self, inter: disnake.ApplicationCommandInteraction, argument):
+        now = inter.created_at
+        self.argument = argument
+    
+        dt = dateparser.parse(argument, settings=self.settings)
+
+        if dt is None:
+            raise commands.BadArgument('Invalid time provided, try e.g. "tomorrow" or "3 days"')
+
+        for field in ('hour', 'minute', 'second', 'microsecond'):
+            if getattr(dt, field) is None:
+                setattr(dt, field, getattr(now, field))
+
+        self.dt = dt
+        self._past = dt < now
+# usage: arg: str = commands.param(converter=Time)
+
+class FutureTime(Time):
+    def __init__(self, inter: disnake.ApplicationCommandInteraction, argument):
+        super().__init__(inter, argument)
+
+        if self._past:
+            raise commands.BadArgument('This time is in the past')
+# usage: arg: str = commands.param(converter=FutureTime)
+
+async def futuretime_autocomp(inter, value):
+    try:
+        converted = FutureTime(inter, value)
+    except commands.BadArgument as exc:
+        return {str(exc): 'null'}
+    return {converted.dt.strftime('%d %b %Y, at %H:%M:%S'): value}

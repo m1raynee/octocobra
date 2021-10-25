@@ -60,6 +60,7 @@ class Confirm(_BaseView):
 
     async def finalize(self, inter):
         await self.callback(self.value, inter)
+        self._inter = inter
         self.stop()
 
 class Delete(_BaseView):
