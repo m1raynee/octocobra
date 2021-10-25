@@ -213,13 +213,13 @@ class Reminder(commands.Cog):
         """
 
 
-        timer = await self.create_timer(
+        await inter.response.send_message(f"Alright {inter.author.mention}, {disnake.utils.format_dt(when.dt, 'R')}: {reason}")
+        await self.create_timer(
             when.dt, 'reminder', inter.author.id,
             inter.channel.id, reason,
             created=inter.created_at,
             message_id=inter.message.id
         )
-        await inter.response.send_message(f"Alright {inter.author.mention}, {timer.expires_delta}: {reason}")
 
     @reminder.sub_command(name='list')
     async def reminder_list(self, inter: disnake.ApplicationCommandInteraction):
