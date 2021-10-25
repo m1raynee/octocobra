@@ -28,7 +28,6 @@ class Timer:
     @classmethod
     def temporary(cls, *, expires, created, event, author_id, args, kwargs):
         pseudo = {
-            'id': None,
             'extra': {'args': args, 'kwargs': kwargs},
             'event': event,
             'created': created,
