@@ -12,7 +12,7 @@ from .utils.views import Confirm
 
 
 class Timer:
-    __slots__ = ('args', 'kwargs', 'event', 'id', 'created_at', 'expires')
+    __slots__ = ('args', 'kwargs', 'event', 'id', 'created_at', 'expires', 'author_id')
 
     def __init__(self, *, record: Reminders):
         self.id = record.id
