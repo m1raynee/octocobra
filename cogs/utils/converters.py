@@ -1,7 +1,7 @@
+from __future__ import annotations
 import re
 from operator import attrgetter
 from typing import TYPE_CHECKING, Optional
-from __future__ import annotations
 
 import dateparser
 import disnake
