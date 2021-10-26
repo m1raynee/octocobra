@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import io
 import re
 import os
+from typing import TYPE_CHECKING
 import zlib
 
 from disnake.ext import commands
@@ -12,7 +15,9 @@ from .utils import fuzzy
 from .utils.emojis import choice_marks
 from .utils.views import Confirm
 from .utils.converters import UserCondition
-from bot import DisnakeHelper
+
+if TYPE_CHECKING:
+    from bot import DisnakeHelper
 
 DISNAKE_GUILD_ID = 808030843078836254
 DISNAKE_BOT_ROLE = 888451879753904138
@@ -238,7 +243,7 @@ class Disnake(commands.Cog, name='disnake'):
         g = disnake.Object(DISNAKE_GUILD_ID)
         slash_url = oauth_url(bot.id, guild=g, scopes=('bot', 'applications.commands'))
         bot_url = oauth_url(bot.id, guild=g)
-        
+
         e = disnake.Embed(description=reason, color=disnake.Colour.orange())
         e.set_author(name=inter.author.display_name, icon_url=inter.author.display_avatar)
         e.set_thumbnail(url=bot.display_avatar)
