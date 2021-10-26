@@ -1,15 +1,10 @@
 from __future__ import annotations
 import re
 from operator import attrgetter
-from typing import TYPE_CHECKING, Optional
 
 import dateparser
 import disnake
 from disnake.ext import commands
-
-if TYPE_CHECKING:
-    from disnake import ApplicationCommandInteraction as ACI
-
 
 id_pattern = re.compile(r'[0-9]{15,19}')
 
@@ -69,7 +64,7 @@ def clean_inter_content(
 
     return convert
 
-async def tag_name(inter: ACI, argument: str):
+async def tag_name(inter: disnake.ApplicationCommandInteraction, argument: str):
     converted = await clean_inter_content()(inter, argument)
     lower = converted.lower().strip()
 
@@ -109,7 +104,7 @@ class UserCondition(_checker):
         self.inter = None
         self.id = None
     
-    def __call__(self, inter: ACI, argument: str) -> None:
+    def __call__(self, inter: disnake.ApplicationCommandInteraction, argument: str) -> None:
         self.inter = inter
         if not argument.isdigit():
             raise TypeError('This field must be a integer')
@@ -126,7 +121,7 @@ class UserCondition(_checker):
 
 class Time:
     settings={'PREFER_DATES_FROM': 'future', 'RETURN_AS_TIMEZONE_AWARE': True}
-    def __init__(self, inter: ACI, argument: str):
+    def __init__(self, inter: disnake.ApplicationCommandInteraction, argument: str):
         now = inter.created_at
         self.argument = argument
     
@@ -144,7 +139,7 @@ class Time:
 # usage: arg: str = commands.param(converter=Time)
 
 class FutureTime(Time):
-    def __init__(self, inter: ACI, argument: str):
+    def __init__(self, inter: disnake.ApplicationCommandInteraction, argument: str):
         super().__init__(inter, argument)
 
         if self._past:
@@ -159,7 +154,7 @@ async def futuretime_autocomp(inter, value):
     return {converted.dt.strftime('on %a, %d %b %Y, at %H:%M:%S in UTC'): value}
 
 class ActionReason:
-    def __init__(self, inter: ACI, argument: Optional[str]):
+    def __init__(self, inter: disnake.ApplicationCommandInteraction, argument: str):
         if argument is None:
             self.ret = f'Action done by {inter.author} (ID: {inter.author.id})'
             return
@@ -170,7 +165,7 @@ class ActionReason:
             raise commands.BadArgument(f'Reason is too long ({len(argument)}/{reason_max})')
         self.ret = ret
 
-async def action_autocomp(inter: ACI, value: str):
+async def action_autocomp(inter: disnake.ApplicationCommandInteraction, value: str):
     try:
         converted = ActionReason(inter, value)
     except commands.BadArgument as exc:
