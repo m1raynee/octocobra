@@ -12,7 +12,7 @@ from tortoise.exceptions import IntegrityError
 
 from .utils.db import in_transaction, TransactionWrapper, F
 from .utils.db.tags import TagTable, TagLookup
-from .utils.helpers import safe_send_prepare
+from .utils.send import safe_send_prepare
 from .utils.converters import tag_name, clean_inter_content
 from .utils import paginator
 from .utils.views import Confirm
@@ -199,9 +199,9 @@ class TagSource(paginator.BaseListSource):
         ])
         return e
 
-name_conv = clean_inter_content()
+name_converter = clean_inter_content()
 async def name_autocomp(inter: disnake.ApplicationCommandInteraction, user_input: str):
-    user_input = await name_conv(inter, user_input)
+    user_input = await name_converter(inter, user_input)
     rows = await (TagLookup
         .filter(name__contains=user_input)
         .limit(20)
@@ -209,7 +209,7 @@ async def name_autocomp(inter: disnake.ApplicationCommandInteraction, user_input
     )
     return [row.name for row in rows]
 
-name_param = partial(commands.param, conv=name_conv, autocomp=name_autocomp)
+name_param = partial(commands.param, converter=name_converter, autocomp=name_autocomp)
 
 class Tags(commands.Cog):
     """Commands to fetch something by a tag name"""
@@ -286,7 +286,7 @@ class Tags(commands.Cog):
             raise commands.CheckFailure('You cannot menage this tag.')
 
     @commands.slash_command()
-    async def tag(self, inter):
+    async def tag(*_):
         pass
 
     @tag.sub_command(name = 'show')
@@ -349,7 +349,7 @@ class Tags(commands.Cog):
     async def tag_alias(
         self,
         inter: disnake.ApplicationCommandInteraction,
-        new_name: str = commands.param(conv=name_conv),
+        new_name: str = commands.param(converter=name_converter),
         old_name: str = name_param()
     ):
         """

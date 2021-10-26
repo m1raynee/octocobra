@@ -37,7 +37,7 @@ Branches = commands.option_enum(
 
 class SphinxObjectFileReader:
     # Inspired by Sphinx's InventoryFileReader
-    BUFSIZE = 16 * 1024
+    BUFFER_SIZE = 16 * 1024
 
     def __init__(self, buffer):
         self.stream = io.BytesIO(buffer)
@@ -49,9 +49,10 @@ class SphinxObjectFileReader:
         self.stream.readline()
 
     def read_compressed_chunks(self):
+        # # cspell:ignore decompressor
         decompressor = zlib.decompressobj()
         while True:
-            chunk = self.stream.read(self.BUFSIZE)
+            chunk = self.stream.read(self.BUFFER_SIZE)
             if len(chunk) == 0:
                 break
             yield decompressor.decompress(chunk)
@@ -104,7 +105,7 @@ class Disnake(commands.Cog, name='disnake'):
             if not match:
                 continue
 
-            name, directive, prio, location, dispname = match.groups()
+            name, directive, _, location, display_name = match.groups()
             domain, _, subdirective = directive.partition(':')
             if directive == 'py:module' and name in result:
                 # From the Sphinx Repository:
@@ -121,7 +122,7 @@ class Disnake(commands.Cog, name='disnake'):
             if location.endswith('$'):
                 location = location[:-1] + name
 
-            key = name if dispname == '-' else dispname
+            key = name if display_name == '-' else display_name
             prefix = f'{subdirective}:' if domain == 'std' else ''
 
             if projname == 'disnake':
@@ -202,7 +203,7 @@ class Disnake(commands.Cog, name='disnake'):
     async def addbot(
         self,
         inter: disnake.ApplicationCommandInteraction,
-        bot_id: str = commands.param(conv=UserCondition(bot=True)),
+        bot_id: str = commands.param(converter=UserCondition(bot=True)),
         reason: str = commands.param()
     ):
         """
@@ -234,12 +235,15 @@ class Disnake(commands.Cog, name='disnake'):
         if not view.value:
             return
 
-        url = oauth_url(bot.id, guild=disnake.Object(DISNAKE_GUILD_ID), scopes=('bot', 'applications.commands'))
+        g = disnake.Object(DISNAKE_GUILD_ID)
+        slash_url = oauth_url(bot.id, guild=g, scopes=('bot', 'applications.commands'))
+        bot_url = oauth_url(bot.id, guild=g)
+        
         e = disnake.Embed(description=reason, color=disnake.Colour.orange())
         e.set_author(name=inter.author.display_name, icon_url=inter.author.display_avatar)
         e.set_thumbnail(url=bot.display_avatar)
         e.add_field(name='Name', value=str(bot))
-        e.add_field(name='Link', value=f'[Invite URL]({url})')
+        e.add_field(name='Link', value=f'[Invite URL]({bot_url})\n([with app commands]({slash_url}))')
         e.add_field(name='ID', value=bot.id, inline=False)
         e.add_field(name='Author ID', value=inter.author.id)
 
@@ -270,16 +274,16 @@ class Disnake(commands.Cog, name='disnake'):
             member_id = int(embed.fields[3].value)
             if payload.emoji.id == 892770746013724683:
                 embed.colour = disnake.Colour.green()
-                user_cotnent = f'Your bot <@{bot_id}> was invited to disnake server.'
+                user_content = f'Your bot <@{bot_id}> was invited to disnake server.'
                 add_content = f'<@{member_id}> will be aware about adding a bot.'
             else:
                 embed.colour = disnake.Colour.red()
-                user_cotnent = f'<@{bot_id}>\'s invitation was rejected.'
+                user_content = f'<@{bot_id}>\'s invitation was rejected.'
                 add_content = f'<@{member_id}> will be aware about rejecting a bot.'
             await message.edit(content=add_content, embed=embed)
             await message.clear_reactions()
 
-            await (await self.bot.get_or_fetch_user(member_id)).send(user_cotnent)
+            await (await self.bot.get_or_fetch_user(member_id)).send(user_content)
     
     @commands.Cog.listener()
     async def on_member_join(self, member: disnake.Member):

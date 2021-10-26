@@ -10,7 +10,7 @@ from disnake.ext import commands
 import disnake
 from aiohttp import ClientResponseError
 
-from .utils.helpers import wait_for_deletion
+from .utils.send import wait_for_deletion
 
 GITHUB_RE = re.compile(
     r'https://github\.com/(?P<repo>[a-zA-Z0-9-]+/[\w.-]+)/blob/'
@@ -27,7 +27,7 @@ GITHUB_HEADERS = {'Accept': 'application/vnd.github.v3.raw'}
 
 
 class Snippets(commands.Cog):
-    """Code snipets from Github (Gists)."""
+    """Code snippets from Github (Gists)."""
 
     def __init__(self, bot):
         self.bot = bot
@@ -63,7 +63,7 @@ class Snippets(commands.Cog):
         start_line = max(1, start_line)
         end_line = min(len(split_file_contents), end_line)
 
-        # Gets the code lines, dedents them, and inserts zero-width spaces to prevent Markdown injection
+        # Gets the code lines, dedent them, and inserts zero-width spaces to prevent Markdown injection
         required = '\n'.join(split_file_contents[start_line - 1:end_line])
         required = textwrap.dedent(required).rstrip().replace('`', '`\u200b')
 
@@ -153,27 +153,27 @@ class Snippets(commands.Cog):
         return ''
 
     async def parse_snippets(self, content: str):
-        all_snipets = []
+        all_snippets = []
 
         for pattern, handler in self.patterns:
             for match in pattern.finditer(content):
                 with suppress(ClientResponseError):
                     snippet = await handler(**match.groupdict())
-                all_snipets.append(snippet)
+                all_snippets.append(snippet)
 
-        return '\n'.join(sorted(all_snipets))
+        return '\n'.join(sorted(all_snippets))
 
     @commands.Cog.listener()
     async def on_message(self, message: disnake.Message):
-        snipets = await self.parse_snippets(message.content)
+        snippets = await self.parse_snippets(message.content)
         destination = message.channel
 
-        if 0 < len(snipets) <= 2000 and snipets.count('\n') <= 15:
+        if 0 < len(snippets) <= 2000 and snippets.count('\n') <= 15:
             with suppress(disnake.NotFound):
                 await message.edit(suppress=True)
-            kwargs = {'content': snipets}
+            kwargs = {'content': snippets}
 
-            if len(snipets) > 1000 and message.channel.id not in (808035299094691882,889872309639315497):
+            if len(snippets) > 1000 and message.channel.id not in (808035299094691882,889872309639315497):
                 destination = self.bot.get_channel(808035299094691882)
             
                 await message.reply(
@@ -184,7 +184,7 @@ class Snippets(commands.Cog):
                 kwargs['reference'] = message
             await wait_for_deletion(
                 message.author.id,
-                {'content': snipets, },
+                {'content': snippets, },
                 destination
             )
 

@@ -5,7 +5,7 @@ from disnake.ext import commands, tasks
 import disnake
 
 from cogs.utils import db
-from cogs.utils.helpers import safe_send_prepare
+from cogs.utils.send import safe_send_prepare
 
 initial_extensions = (
     'cogs.tags',  # cogs

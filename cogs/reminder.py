@@ -9,6 +9,7 @@ from cogs.utils.converters import FutureTime, futuretime_autocomp
 
 from .utils.db.remind import Reminders
 from .utils.views import Confirm
+from .utils import time
 
 
 class Timer:
@@ -47,10 +48,10 @@ class Timer:
 
     @property
     def expires_delta(self):
-        return disnake.utils.format_dt(self.expires, 'R')
+        return time.format_relative(self.expires)
     @property
     def created_delta(self):
-        return disnake.utils.format_dt(self.created_at, 'R')
+        return time.format_relative(self.created_at)
 
     def __repr__(self):
         return f'<Timer created={self.created_at} expires={self.expires} event={self.event}>'
@@ -121,7 +122,7 @@ class Reminder(commands.Cog):
             self._task.cancel()
             self._task = self.bot.loop.create_task(self.dispatch_timers())
 
-    async def short_timer_optimisation(self, seconds, timer):
+    async def short_timer_optimization(self, seconds, timer):
         await asyncio.sleep(seconds)
         event_name = f'{timer.event}_timer_complete'
         self.bot.dispatch(event_name, timer)
@@ -147,7 +148,7 @@ class Reminder(commands.Cog):
 
         Note
         ------
-        Arguments and keyword arguments must be JSON serialisable.
+        Arguments and keyword arguments must be JSON serializable.
 
         Returns
         --------
@@ -160,6 +161,7 @@ class Reminder(commands.Cog):
             now = disnake.utils.utcnow()
 
         # Remove timezone information since the database does not deal with it
+        # cSpell:ignore astimezone
         when = when.astimezone(datetime.timezone.utc).replace(tzinfo=None)
         now = now.astimezone(datetime.timezone.utc).replace(tzinfo=None)
 
@@ -174,7 +176,7 @@ class Reminder(commands.Cog):
         delta = (when - now).total_seconds()
         if delta <= 60:
             # a shortcut for small timers
-            self.bot.loop.create_task(self.short_timer_optimisation(delta, timer))
+            self.bot.loop.create_task(self.short_timer_optimization(delta, timer))
             return timer
 
         row = await (Reminders
