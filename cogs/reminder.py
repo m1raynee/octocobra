@@ -320,7 +320,7 @@ class Reminder(commands.Cog):
 
         guild_id = channel.guild.id if isinstance(channel, (disnake.TextChannel, disnake.Thread)) else '@me'
         message_id = timer.kwargs.get('message_id')
-        msg = f'<@{author_id}>, {timer.created_at}: {message}'
+        msg = f'<@{author_id}>, {timer.created_delta}: {message}'
         view = disnake.utils.MISSING
 
         if message_id:
