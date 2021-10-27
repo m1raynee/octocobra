@@ -32,3 +32,5 @@ var/
 /awskeys
 run.sh
 console.log
+/migrations
+aerich.ini
