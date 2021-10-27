@@ -24,3 +24,5 @@ async def init(*, close_connections=True):
     if close_connections:
         await Tortoise.close_connections()
     await Tortoise.init(config=TORTOISE_ORM)
+    if close_connections:
+        await Tortoise.generate_schemas()

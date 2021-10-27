@@ -8,6 +8,7 @@ class TagTable(Model):
     owner_id = BigIntField()
     uses = IntField(default=0)
     created_at = DatetimeField(auto_now_add=True)
+    prefix = CharField(64, default='\N{bookmark}')
 
     aliases: ForeignKeyRelation['TagLookup']
 
