@@ -1,9 +1,8 @@
 import asyncio
 import datetime
 from os import name
-from typing import Optional, Union, List
+from typing import Dict, Optional, Union, List
 from functools import partial
-from textwrap import shorten
 
 from disnake.ext import commands
 from disnake import ui
@@ -18,23 +17,6 @@ from .utils.converters import tag_name, clean_inter_content
 from .utils import paginator
 from .utils.views import Confirm
 
-TAG_PREFIXES = {
-    '\N{BOOKMARK}': 'No category',
-    '\N{BOOK}': 'Modules and packages',
-    '\N{scroll}': 'Code snippets',
-    '\N{memo}': 'Tips and tricks',
-    '\N{FACE WITH TEARS OF JOY}': 'Memes'
-}
-class TagPrefixButton(ui.Button['PrefixView']):
-    def __init__(self, name: str, emoji: str):
-        super().__init__(label=name, emoji=emoji)
-    
-    async def callback(self, interaction: disnake.MessageInteraction):
-        self.view.value_button = self
-        await interaction.response.edit_message('You can dismiss this message.')
-
-class PrefixView(ui.View):
-    ...
 
 class TagCreateView(disnake.ui.View):
     message: disnake.Message
@@ -58,20 +40,21 @@ class TagCreateView(disnake.ui.View):
             self.remove_item(self.name_button)
             self.name = edit.name
             self.content = edit.content
-            self.prefix = edit.prefix
         else:
             self.name = self.content = None
-            self.prefix = '\N{bookmark}'
 
     def response_check(self, msg):
         return self._init_interaction.channel == msg.channel and msg.author == self._init_interaction.author
 
     def prepare_embed(self):
-        e = disnake.Embed(title='Tag creation', color=0x0084c7)
-        e.add_field(name='Name', value=self.name, inline=False)
-        e.add_field(name='Content', value=shorten(str(self.content), 1024), inline=False)
-        e.add_field(name='Prefix', value='\\'+self.prefix, inline=False)
-
+        e = disnake.Embed(
+            title='Tag creation',
+            color=0x0084c7
+        ).add_field(
+            name='Name', value=self.name, inline=False
+        ).add_field(
+            name='Content', value=str(self.content)[:1024], inline=False
+        )
         if len(str(self.content)) > 1024:
             e.description = '\n**Hint:** Tag content reached embed field limitation, this will not affect the content'
         return e
@@ -84,16 +67,16 @@ class TagCreateView(disnake.ui.View):
 
     def unlock_all(self):
         for child in self.children:
+            if child.label != 'Abort':
+                child.disabled = False
             if child.label == 'Confirm':
                 if self._edit:
                     if self._edit != self.content:
                         child.disabled = False
-                if self.name is not None and self.content is not None:
+                if (self.name is not None) and (self.content is not None):
                     child.disabled = False
                 else:
                     child.disabled = True
-            else:
-                child.disabled = True
 
     async def interaction_check(self, interaction: disnake.Interaction) -> bool:
         if interaction.author == self._init_interaction.author:
@@ -111,10 +94,8 @@ class TagCreateView(disnake.ui.View):
 
         await interaction.response.edit_message(content=msg_content, view=self)
         msg = await self.bot.wait_for('message', check=self.response_check, timeout=60)
-        if self.is_finished():
-            return
 
-        content = None
+        content = ''
         try:
             name = await tag_name(interaction, msg.content)
         except commands.BadArgument as e:
@@ -123,16 +104,16 @@ class TagCreateView(disnake.ui.View):
             if self._cog.is_tag_being_made(name):
                 content = 'Sorry. This tag is currently being made by someone.'
             else:
-                rows = await (TagLookup
+                rows = await (TagTable
                     .filter(name=name)
                     .limit(1)
                 )
-                if not rows:
+                if len(rows) == 0:
                     self.name = name
                     self._cog.add_in_progress_tag(name)
                     self.remove_item(button)
                 else:
-                    content = 'Sorry. A tag with that name already exists.'
+                    content='Sorry. A tag with that name already exists.'
 
         self.unlock_all()
         await self.message.edit(content=content, embed=self.prepare_embed(), view=self)
@@ -147,8 +128,6 @@ class TagCreateView(disnake.ui.View):
 
         await interaction.response.edit_message(content=msg_content, view=self)
         msg = await self.bot.wait_for('message', check=self.response_check, timeout=300)
-        if self.is_finished():
-            return
 
         if msg.content:
             clean_content = await clean_inter_content()(interaction, msg.content)
@@ -166,19 +145,6 @@ class TagCreateView(disnake.ui.View):
 
         self.unlock_all()
         await self.message.edit(content=c, embed=self.prepare_embed(), view=self)
-    
-    @ui.button(
-        label='Prefix',
-        style=disnake.ButtonStyle.secondary
-    )
-    async def prefix_button(self, button: disnake.Button, interaction: disnake.Interaction):
-        button.disabled = True
-        msg_content = f'Cool, let\'s edit the prefix. Send the tag prefix in the next message...'
-
-        
-        if self.is_finished():
-            return
-
 
     @ui.button(
         label='Confirm',
@@ -239,12 +205,9 @@ async def name_autocomp(inter: disnake.ApplicationCommandInteraction, user_input
     rows = await (TagLookup
         .filter(name__contains=user_input)
         .limit(20)
-        .only('name', 'prefix')
+        .only('name')
     )
-    return {
-        f'{row.prefix} {row.name}': row.name
-        for row in rows
-    }
+    return [row.name for row in rows]
 
 name_param = partial(commands.param, converter=name_converter, autocomp=name_autocomp)
 
