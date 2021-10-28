@@ -7,9 +7,9 @@ import disnake
 def to_string(c, *, skip_url=False):
     digit = f'{ord(c):x}'
     name = unicodedata.name(c, 'Name not found.')
-    r = f'`\\U{digit:>08}`: {name} - {c} \N{EM DASH}'
+    r = f'`\\U{digit:>08}`: {name} - {c}'
     if not skip_url:
-        r += f' <http://www.fileformat.info/info/unicode/char/{digit}>'
+        r += f' \N{EM DASH} <http://www.fileformat.info/info/unicode/char/{digit}>'
     return r
 
 async def charinfo_autocomp(inter, value):
