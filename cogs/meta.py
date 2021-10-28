@@ -8,7 +8,7 @@ def to_string(c, *, skip_url=False):
     digit = f'{ord(c):x}'
     name = unicodedata.name(c, 'Name not found.')
     r = f'`\\U{digit:>08}`: {name} - {c} \N{EM DASH}'
-    if skip_url:
+    if not skip_url:
         r += f' <http://www.fileformat.info/info/unicode/char/{digit}>'
     return r
 
