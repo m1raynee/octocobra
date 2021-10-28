@@ -9,7 +9,6 @@ from disnake.ext import commands
 from disnake import ui
 import disnake
 from tortoise.exceptions import IntegrityError
-from tortoise.query_utils import Prefetch
 
 from .utils.db import in_transaction, TransactionWrapper, F
 from .utils.db.tags import TagTable, TagLookup
@@ -253,7 +252,7 @@ async def name_autocomp(inter: disnake.ApplicationCommandInteraction, user_input
     rows = await (TagLookup
         .filter(name__contains=user_input)
         .limit(20)
-        .only('name')
+        .only('name', 'original_id')
         .prefetch_related('original')
     )
     return {
