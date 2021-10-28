@@ -503,7 +503,7 @@ class Tags(commands.Cog):
         ----------
         name: Requested tag name
         """
-        tag = await self.get_tag(name, only=('id', 'name', 'content', 'owner_id'))
+        tag = await self.get_tag(name, only=('id', 'name', 'content', 'owner_id', 'prefix'))
         self.can_menage(inter.author, tag)
 
         view = TagCreateView(inter, self, tag)
