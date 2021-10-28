@@ -250,9 +250,9 @@ class Reminder(commands.Cog):
         else:
             e.set_footer(text=f'{len(records)} reminder{"s" if len(records) > 1 else ""}')
 
-        for _id, expires, message in records:
-            shorten = textwrap.shorten(message, width=512)
-            e.add_field(name=f'{_id}: {disnake.utils.format_dt(expires, "R")}', value=shorten, inline=False)
+        for row in records:
+            shorten = textwrap.shorten(row.message, width=512)
+            e.add_field(name=f'{row.id}: {disnake.utils.format_dt(row.expires, "R")}', value=shorten, inline=False)
 
         await inter.response.send_message(embed=e, ephemeral=True)
 
