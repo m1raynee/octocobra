@@ -18,7 +18,7 @@ from .utils import paginator
 from .utils.views import Confirm
 
 TAG_PREFIXES = {
-    '\N{BOOK}': ('Modules and packages', 'Links to important libraries and extantions'),
+    '\N{NOTEBOOK WITH DECORATIVE COVER}': ('Modules and packages', 'Links to important libraries and extantions'),
     '\N{SCROLL}': ('Code snippets', 'Helpful, illustrative code examples'),
     '\N{MEMO}': ('Tips and tricks', 'Short but helpful tips for each other'),
     '\N{FACE WITH TEARS OF JOY}': ('Memes', 'Funny things'),
@@ -29,7 +29,7 @@ class TagPrefixSelect(ui.Select['PrefixView']):
         super().__init__(
             placeholder='Select the appropriate prefix',
             options=[
-                disnake.SelectOption(label=v[0], description=v[1], emoji=k)
+                disnake.SelectOption(label=v[0], description=v[1], emoji=k, value=k)
                 for k, v in TAG_PREFIXES.items()
             ]
         )
@@ -83,7 +83,7 @@ class TagCreateView(disnake.ui.View):
         e = disnake.Embed(title='Tag creation', color=0x0084c7)
         e.add_field(name='Name', value=self.name, inline=False)
         e.add_field(name='Content', value=shorten(str(self.content), 1024), inline=False)
-        e.add_field(name='Prefix', value=f'\\{self.prefix} {TAG_PREFIXES[self.prefix]}', inline=False)
+        e.add_field(name='Prefix', value=f'\\{self.prefix} {TAG_PREFIXES[self.prefix][0]}', inline=False)
 
         if len(str(self.content)) > 1024:
             e.description = '\n**Hint:** Tag content reached embed field limitation, this will not affect the content'
