@@ -4,11 +4,12 @@ from disnake.ext import commands
 import disnake
 
 
-def to_string(c, *, skip_url=False):
+def to_string(c, *, for_autocomp=False):
     digit = f'{ord(c):x}'
     name = unicodedata.name(c, 'Name not found.')
-    r = f'`\\U{digit:>08}`: {name} - {c}'
-    if not skip_url:
+    border = "" if for_autocomp else "`"
+    r = f'{border}\\U{digit:>08}{border}: {name} - {c}'
+    if not for_autocomp:
         r += f' \N{EM DASH} <http://www.fileformat.info/info/unicode/char/{digit}>'
     return r
 
@@ -16,7 +17,7 @@ async def charinfo_autocomp(inter, value):
     if len(value) > 25:
         return {'Only up to 25 characters at a time.': ''}
     return {
-        to_string(c, skip_url=True): value
+        to_string(c, for_autocomp=True): value
         for c in value
     }
 
