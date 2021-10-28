@@ -35,7 +35,7 @@ class TagPrefixSelect(ui.Select['PrefixView']):
         )
     
     async def callback(self, interaction: disnake.MessageInteraction):
-        await interaction.response.edit_message('You can dismiss this message.')
+        await interaction.response.edit_message(content='You can dismiss this message.')
         self.view.selected = self.values[0]
         self.view.stop()
 
