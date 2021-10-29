@@ -102,12 +102,12 @@ class TagCreateView(disnake.ui.View):
                     if self._edit.content != self.content or self._edit.prefix != self.prefix:
                         child.disabled = False
                         continue
-                if self.name is not None and self.content is not None:
+                elif self.name is not None and self.content is not None:
                     child.disabled = False
                 else:
                     child.disabled = True
             else:
-                child.disabled = True
+                child.disabled = False
 
     async def interaction_check(self, interaction: disnake.Interaction) -> bool:
         if interaction.author == self._init_interaction.author:
@@ -219,7 +219,10 @@ class TagCreateView(disnake.ui.View):
     )
     async def abort_button(self, button: disnake.Button, interaction: disnake.MessageInteraction):
         self._cog.remove_in_progress_tag(name)
-        await interaction.response.edit_message(content='Tag creation aborted o/', view=None, embed=None)
+        await interaction.response.edit_message(
+            content=f'Tag {"edi" if self._edit else "crea"}tion aborted.', # cspell: ignoreline
+            view=None, embed=None
+        )
         self.stop()
 
     async def on_error(self, error: Exception, item, interaction: disnake.MessageInteraction) -> None:
