@@ -55,26 +55,22 @@ class DisnakeHelper(commands.Bot):
         else:
             m = interaction.response.send_message
 
-        if isinstance(exception, RuntimeError):
+        if isinstance(exception, (RuntimeError, commands.CheckFailure)):
             return await m(exception, ephemeral=True)
 
-        elif not interaction.application_command.has_error_handler() or interaction.application_command.cog.has_slash_error_handler():
-            now = disnake.utils.utcnow().timestamp()
-            content = f'Unknown error happen. Contact m1raynee. Error timestamp: {now}'
-            await m(content, ephemeral=True)
-            tb = '\n'.join(traceback.format_exception(type(exception), exception, exception.__traceback__))
-            await self.owner.send((
-                '```py\n'
-                f'{interaction.user = }\n'
-                f'{interaction.channel.id = }\n'
-                f'{interaction.application_command.name = }\n'
-                f'{interaction.options = }\n'
-                '```'
-            ))
-            await self.owner.send(**(await safe_send_prepare(f'```py\n{tb}\n```')))
-
-        else:
-            return await super().on_slash_command_error(interaction, exception)
+        content = f'Unknown error happen. Contact m1raynee. Error timestamp: {disnake.utils.utcnow().timestamp()}'
+        await m(content, ephemeral=True)
+        tb = '\n'.join(traceback.format_exception(type(exception), exception, exception.__traceback__))
+        await self.owner.send((
+            '```py\n'
+            f'{interaction.user = }\n'
+            f'{interaction.channel.id = }\n'
+            f'{interaction.application_command.name = }\n'
+            f'{interaction.options = }\n'
+            '```'
+        ))
+        await self.owner.send(**(await safe_send_prepare(f'```py\n{tb}\n```')))
+        super().on_slash_command_error
 
     async def on_error(self, event_method: str, *args, **kwargs) -> None:
         await self.owner.send((

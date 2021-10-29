@@ -193,8 +193,16 @@ class PaginatorView(disnake.ui.View):
         self.stop()
 
 class BaseListSource(menus.ListPageSource):
-    @staticmethod
-    def base_embed() -> disnake.Embed:
-        return disnake.Embed(
+    def base_embed(self, view: PaginatorView, entries) -> disnake.Embed:
+        e = disnake.Embed(
             color=0x0084c7
         )
+        if self.is_paginating():
+            offset = view.current_page*self.per_page+1
+            e.set_footer(
+                text=(
+                    f'Page {view.current_page}/{self.get_max_pages()} | '
+                    f'Showed {offset}-{offset+len(entries)}/{len(self.entries)}'
+                )
+            )
+        return e

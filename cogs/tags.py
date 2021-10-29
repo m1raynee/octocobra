@@ -35,7 +35,7 @@ class TagPrefixSelect(ui.Select['PrefixView']):
         )
     
     async def callback(self, interaction: disnake.MessageInteraction):
-        await interaction.response.edit_message(content='You can dismiss this message.')
+        await interaction.response.edit_message(content='You can dismiss this message.', view=None)
         self.view.selected = self.values[0]
         self.view.stop()
 
@@ -99,8 +99,9 @@ class TagCreateView(disnake.ui.View):
         for child in self.children:
             if child.label == 'Confirm':
                 if self._edit:
-                    if self._edit != self.content:
+                    if self._edit.content != self.content or self._edit.prefix != self.prefix:
                         child.disabled = False
+                        continue
                 if self.name is not None and self.content is not None:
                     child.disabled = False
                 else:
@@ -118,7 +119,7 @@ class TagCreateView(disnake.ui.View):
         label='Name',
         style=disnake.ButtonStyle.secondary
     )
-    async def name_button(self, button: disnake.Button, interaction: disnake.Interaction):
+    async def name_button(self, button: disnake.Button, interaction: disnake.MessageInteraction):
         self.lock_all()
         msg_content = 'Cool, let\'s make a name. Send the tag name in the next message...'
 
@@ -154,7 +155,7 @@ class TagCreateView(disnake.ui.View):
         label='Content',
         style=disnake.ButtonStyle.secondary
     )
-    async def content_button(self, button: disnake.Button, interaction: disnake.Interaction):
+    async def content_button(self, button: disnake.Button, interaction: disnake.MessageInteraction):
         self.lock_all()
         msg_content = f'Cool, let\'s {"edit the" if self._edit else "make a"} content. Send the tag content in the next message...'
 
@@ -184,13 +185,14 @@ class TagCreateView(disnake.ui.View):
         label='Prefix',
         style=disnake.ButtonStyle.secondary
     )
-    async def prefix_button(self, button: disnake.Button, interaction: disnake.Interaction):
+    async def prefix_button(self, button: disnake.Button, interaction: disnake.MessageInteraction):
         view = PrefixView()
         await interaction.response.send_message('Please choose one of prefixes', view=view, ephemeral=True)
         self.prefix = await view.start()
         if self.is_finished():
             return
 
+        self.unlock_all()
         await self.message.edit(embed=self.prepare_embed())
 
     @ui.button(
@@ -198,7 +200,7 @@ class TagCreateView(disnake.ui.View):
         style=disnake.ButtonStyle.success,
         disabled=True
     )
-    async def comfirm_button(self, button: disnake.Button, interaction: disnake.Interaction):
+    async def comfirm_button(self, button: disnake.Button, interaction: disnake.MessageInteraction):
         if self._edit and self._edit.content == self.content:
             return await interaction.response.edit_message(
                 content='Content still the same...\nHint: edit it by pressing "Content"'
@@ -215,12 +217,12 @@ class TagCreateView(disnake.ui.View):
         label='Abort',
         style=disnake.ButtonStyle.danger
     )
-    async def abort_button(self, button: disnake.Button, interaction: disnake.Interaction):
+    async def abort_button(self, button: disnake.Button, interaction: disnake.MessageInteraction):
         self._cog.remove_in_progress_tag(name)
         await interaction.response.edit_message(content='Tag creation aborted o/', view=None, embed=None)
         self.stop()
 
-    async def on_error(self, error: Exception, item, interaction: disnake.Interaction) -> None:
+    async def on_error(self, error: Exception, item, interaction: disnake.MessageInteraction) -> None:
         if isinstance(error, asyncio.TimeoutError):
             if interaction.response.is_done():
                 method = self.message.edit
@@ -238,7 +240,7 @@ class TagSource(paginator.BaseListSource):
         super().__init__(entries, per_page=20)
 
     async def format_page(self, view: paginator.PaginatorView, page: List[TagLookup]):
-        e = self.base_embed()
+        e = self.base_embed(view, page)
         e.description = '\n'.join([
             f'{i}. {row.name} (id: {row.id})'
             for i, row
@@ -326,11 +328,11 @@ class Tags(commands.Cog):
                 await tr.commit()
                 await inter.followup.send(f'Tag {name} successfully created.')
 
-    def is_tag_being_made(self, name):
+    def is_tag_being_made(self, name: str):
         return name.lower() in self._tags_being_made
-    def add_in_progress_tag(self, name):
+    def add_in_progress_tag(self, name: str):
         self._tags_being_made.add(name.lower())
-    def remove_in_progress_tag(self, name):
+    def remove_in_progress_tag(self, name: str):
         self._tags_being_made.discard(name.lower())
 
     def can_menage(self, user, tag: TagTable):
@@ -380,9 +382,7 @@ class Tags(commands.Cog):
 
     @tag.sub_command(name = 'create')
     async def tag_create(self, inter: disnake.ApplicationCommandInteraction):
-        """
-        Creates a new tag owned by you (interactive !!)
-        """
+        """Creates a new tag owned by you."""
         view = TagCreateView(inter, self)
         await inter.response.send_message(embed=view.prepare_embed(), view=view)
         view.message = await inter.original_message()
