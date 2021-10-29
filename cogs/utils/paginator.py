@@ -198,11 +198,11 @@ class BaseListSource(menus.ListPageSource):
             color=0x0084c7
         )
         if self.is_paginating():
-            offset = view.current_page*self.per_page+1
+            offset = view.current_page*self.per_page
             e.set_footer(
                 text=(
-                    f'Page {view.current_page}/{self.get_max_pages()} | '
-                    f'Showed {offset}-{offset+len(entries)}/{len(self.entries)}'
+                    f'Page {view.current_page+1}/{self.get_max_pages()} | '
+                    f'Showed {offset+1}-{offset+len(entries)}/{len(self.entries)}'
                 )
             )
         return e
