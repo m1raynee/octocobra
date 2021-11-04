@@ -12,25 +12,16 @@ if TYPE_CHECKING:
     from .reminder import Reminder, Timer
 
 DISNAKE_GUILD_ID = 808030843078836254
-MUTE_ROLE_ID = 0
-MOD_ROLE_ID = 808033337767362570
-COLLAB_ROLE_ID = 891619545356308481
+MUTE_ROLE_ID = 902791187432370176
 
 class Moderation(commands.Cog):
     def __init__(self, bot: DisnakeHelper):
         self.bot = bot
-    
+
     @commands.slash_command(default_permission=False)
-    @commands.guild_permissions(
-        DISNAKE_GUILD_ID,
-        {MOD_ROLE_ID: True, COLLAB_ROLE_ID: True}
-    )
     async def mute(*_):
         pass
-    
-    # @mute.slash_command(name='mass')
-    async def mute_mass(): ...
-    
+
     @mute.sub_command(name='temp')
     async def mute_temporally(
         self,
@@ -47,7 +38,6 @@ class Moderation(commands.Cog):
         duration: Time to mute member
         reason: The reason of the mute
         """
-        return
         reminder: Optional[Reminder] = self.bot.get_cog('Reminder')
 
         if not reminder:
@@ -84,7 +74,7 @@ class Moderation(commands.Cog):
         if member is None or not member._roles.has(MUTE_ROLE_ID):
             # already did that
             return
-        
+
         if mod_id != member_id:
             moderator = await self.bot.get_or_fetch_member(guild, mod_id)
             if moderator is None:
@@ -97,11 +87,11 @@ class Moderation(commands.Cog):
                     moderator = f'{moderator} (ID: {mod_id})'
             else:
                 moderator = f'{moderator} (ID: {mod_id})'
-            
+
             reason = f'Automatic unmute from timer made on {timer.created_at} by {moderator}.'
         else:  # selfmute
             reason = f'Expiring self-mute made on {timer.created_at} by {member}'
-        
+
         try:
             await member.remove_roles(disnake.Object(id=MUTE_ROLE_ID), reason=reason)
         except disnake.HTTPException:
