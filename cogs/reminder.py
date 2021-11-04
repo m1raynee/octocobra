@@ -22,8 +22,8 @@ class Timer:
         self.args = extra.get('args', [])
         self.kwargs = extra.get('kwargs', {})
         self.event = record.event
-        self.created_at = record.created
-        self.expires = record.expires
+        self.created_at = record.created.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+        self.expires = record.expires.astimezone(datetime.timezone.utc).replace(tzinfo=None)
         self.author_id = record.author_id
 
     @classmethod
@@ -103,7 +103,7 @@ class Reminder(commands.Cog):
                 # so we're gonna cap it off at 40 days
                 # see: http://bugs.python.org/issue20493
                 timer = self._current_timer = await self.wait_for_active_timers(days=40)
-                now = disnake.utils.utcnow()
+                now = disnake.utils.utcnow().replace(tzinfo=None)
 
                 if timer.expires >= now:
                     to_sleep = (timer.expires - now).total_seconds()
