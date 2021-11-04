@@ -160,7 +160,7 @@ async def futuretime_autocomp(inter, value):
 
 class ActionReason:
     def __init__(self, inter: disnake.ApplicationCommandInteraction, argument: str):
-        if argument is None:
+        if argument is None or argument == '':
             self.ret = f'Action done by {inter.author} (ID: {inter.author.id})'
             return
         ret = f'{inter.author} (ID: {inter.author.id}): {argument}'

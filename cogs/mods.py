@@ -76,7 +76,7 @@ class Moderation(commands.Cog):
             return
 
         if mod_id != member_id:
-            moderator = await self.bot.get_or_fetch_member(guild, mod_id)
+            moderator = await guild.get_or_fetch_member(mod_id)
             if moderator is None:
                 try:
                     moderator = await self.bot.fetch_user(mod_id)
