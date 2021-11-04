@@ -32,7 +32,7 @@ class Moderation(commands.Cog):
     # @mute.slash_command(name='mass')
     async def mute_mass(): ...
     
-    @mute.slash_command(name='temporally')
+    @mute.slash_command(name='temp')
     async def mute_temporally(
         self,
         inter: ACI,
@@ -44,8 +44,11 @@ class Moderation(commands.Cog):
         Temporally mutes a member for the specified duration.
         Parameters
         ----------
-        member: 
+        member: Targeted member
+        duration: Time to mute member
+        reason: The reason of the mute
         """
+        return
         reminder: Optional[Reminder] = self.bot.get_cog('Reminder')
 
         if not reminder:
@@ -59,14 +62,14 @@ class Moderation(commands.Cog):
         try:
             await member.add_roles(disnake.Object(MUTE_ROLE_ID), reason=reason)
         except disnake.HTTPException:
-            return await inter.response.send_message(f'{member.mention} already muted.')
+            return await inter.response.send_message(f'{member.mention} already muted.', ephemeral=True)
 
         await reminder.create_timer(
             duration.dt, 'tempmute', inter.author.id, member.id,
             created = inter.created_at
         )
         await inter.response.send_message(
-            f'Muted {disnake.utils.escape_mentions(str(member))}'
+            f'Muted {disnake.utils.escape_mentions(str(member))} '
             f'for {time.format_relative(duration.dt)}'
         )
 

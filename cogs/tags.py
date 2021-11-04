@@ -253,9 +253,10 @@ class TagSource(paginator.BaseListSource):
 
 name_converter = clean_content()
 async def name_autocomp(inter: disnake.ApplicationCommandInteraction, user_input: str):
-    user_input = await name_converter(inter, user_input)
+    user_input = name_converter(inter, user_input)
     rows = await (TagLookup
         .filter(name__contains=user_input)
+        .order_by('name')
         .limit(20)
         .only('name', 'original_id')
         .prefetch_related('original')
@@ -346,7 +347,7 @@ class Tags(commands.Cog):
     async def tag(*_):
         pass
 
-    @tag.sub_command(name = 'show')
+    @tag.sub_command(name='show')
     async def tag_show(
         self,
         inter: disnake.ApplicationCommandInteraction,
@@ -383,7 +384,7 @@ class Tags(commands.Cog):
             .update(uses = F('uses') + 1)
         )
 
-    @tag.sub_command(name = 'create')
+    @tag.sub_command(name='create')
     async def tag_create(self, inter: disnake.ApplicationCommandInteraction):
         """Creates a new tag owned by you."""
         view = TagCreateView(inter, self)
@@ -400,7 +401,7 @@ class Tags(commands.Cog):
         if hasattr(view, 'last_interaction'):
             await self.create_tag(view.last_interaction, view.name, view.content, view.prefix)
 
-    @tag.sub_command(name = 'alias')
+    @tag.sub_command(name='alias')
     async def tag_alias(
         self,
         inter: disnake.ApplicationCommandInteraction,
@@ -436,7 +437,7 @@ class Tags(commands.Cog):
             embed.description = f'Tag alias "{new_name}" that points to "{old_name}" successfully created.'
         await inter.response.send_message(embed=embed)
 
-    @tag.sub_command(name = 'info')
+    @tag.sub_command(name='info')
     async def tag_info(
         self,
         inter: disnake.ApplicationCommandInteraction,
@@ -480,7 +481,7 @@ class Tags(commands.Cog):
 
         await inter.response.send_message(embed=embed)
 
-    @tag.sub_command(name = 'all')
+    @tag.sub_command(name='all')
     async def tag_all(self, inter: disnake.ApplicationCommandInteraction):
         """
         Shows all existed tags
@@ -494,7 +495,7 @@ class Tags(commands.Cog):
         view = paginator.PaginatorView(source, interaction=inter)
         await view.start()
 
-    @tag.sub_command(name = 'edit')
+    @tag.sub_command(name='edit')
     async def tag_edit(
         self,
         inter: disnake.ApplicationCommandInteraction,

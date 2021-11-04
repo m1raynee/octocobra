@@ -1,7 +1,7 @@
 import aiohttp
 import traceback
 
-from disnake.ext import commands, tasks
+from disnake.ext import commands
 import disnake
 
 from cogs.utils import db
@@ -12,7 +12,8 @@ initial_extensions = (
     'cogs.disnake_only',
     'cogs.snippets',
     'cogs.reminder',
-    # 'cogs.meta',
+    'cogs.mods',
+    'cogs.meta',
     'jishaku',  # community extensions
 )
 SLASH_COMMAND_GUILDS = (
@@ -82,6 +83,3 @@ class DisnakeHelper(commands.Bot):
             ))
         tb = traceback.format_exc()
         await self.owner.send(**(await safe_send_prepare(f'```py\n{tb}\n```')))
-
-    def ids(self, *id_list):
-        return list(set((*id_list, *self.owner_ids)))

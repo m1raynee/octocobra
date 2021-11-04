@@ -132,6 +132,8 @@ class Reminder(commands.Cog):
         event: str
             The name of the event to trigger.
             Will transform to 'on_{event}_timer_complete'.
+        author_id: int
+            ID of this timer.
         \*args
             Arguments to pass to the event
         \*\*kwargs
