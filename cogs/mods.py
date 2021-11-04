@@ -32,7 +32,7 @@ class Moderation(commands.Cog):
     # @mute.slash_command(name='mass')
     async def mute_mass(): ...
     
-    @mute.slash_command(name='temp')
+    @mute.sub_command(name='temp')
     async def mute_temporally(
         self,
         inter: ACI,
