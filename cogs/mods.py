@@ -106,3 +106,6 @@ class Moderation(commands.Cog):
             await member.remove_roles(disnake.Object(id=MUTE_ROLE_ID), reason=reason)
         except disnake.HTTPException:
             pass
+
+def setup(bot):
+    bot.add_cog(Moderation(bot))
