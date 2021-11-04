@@ -49,7 +49,7 @@ class Moderation(commands.Cog):
             f'Action done by {inter.author} (ID: {inter.author.id})'
 
         try:
-            await member.add_roles(disnake.Object(MUTE_ROLE_ID), reason=reason)
+            await member.add_roles(disnake.Object(MUTE_ROLE_ID), reason=reason.ret)
         except disnake.HTTPException:
             return await inter.response.send_message(f'{member.mention} already muted.', ephemeral=True)
 
