@@ -68,15 +68,9 @@ class Reminder(commands.Cog):
     def cog_unload(self):
         self._task.cancel()
 
-    async def cog_command_error(self, ctx, error):
-        if isinstance(error, commands.BadArgument):
-            await ctx.send(error)
-        if isinstance(error, commands.TooManyArguments):
-            await ctx.send(f'You called the {ctx.command.name} command with too many arguments.')
-
     async def get_active_timer(self, *, days=7):
         record = await (Reminders
-            .filter(expires__gt=disnake.utils.utcnow() + datetime.timedelta(days=days))
+            .filter(expires__lt=disnake.utils.utcnow() + datetime.timedelta(days=days))
             .order_by('expires')
             .first()
         )

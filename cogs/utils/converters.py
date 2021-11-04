@@ -1,5 +1,6 @@
 from __future__ import annotations
 import re
+import datetime
 from operator import attrgetter
 
 import dateparser
@@ -8,18 +9,24 @@ from disnake.ext import commands
 
 id_pattern = re.compile(r'[0-9]{15,19}')
 
-def clean_inter_content(
-    *,
-    fix_channel_mentions: bool = False,
-    use_nicknames: bool = True,
-    escape_markdown: bool = False,
-    remove_markdown: bool = False,
-):
-    async def convert(inter: disnake.ApplicationCommandInteraction, argument: str):
+class clean_content:
+    def __init__(
+        self, *,
+        fix_channel_mentions: bool = False,
+        use_nicknames: bool = True,
+        escape_markdown: bool = False,
+        remove_markdown: bool = False,
+    ) -> None:
+        self.fix_channel_mentions = fix_channel_mentions
+        self.use_nicknames = use_nicknames
+        self.escape_markdown = escape_markdown
+        self.remove_markdown = remove_markdown
+
+    def __call__(self, inter: disnake.ApplicationCommandInteraction, argument: str):
         if inter.guild:
             def resolve_member(id: int) -> str:
                 m = inter.guild.get_member(id)
-                return f'@{m.display_name if use_nicknames else m.name}' if m else '@deleted-user'
+                return f'@{m.display_name if self.use_nicknames else m.name}' if m else '@deleted-user'
 
             def resolve_role(id: int) -> str:
                 r = inter.guild.get_role(id)
@@ -32,7 +39,7 @@ def clean_inter_content(
             def resolve_role(id: int) -> str:
                 return '@deleted-role'
 
-        if fix_channel_mentions and inter.guild:
+        if self.fix_channel_mentions and inter.guild:
             def resolve_channel(id: int) -> str:
                 c = inter.guild.get_channel(id)
                 return f'#{c.name}' if c else '#deleted-channel'
@@ -54,18 +61,16 @@ def clean_inter_content(
             return transformed
 
         result = re.sub(r'<(@[!&]?|#)([0-9]{15,20})>', repl, argument)
-        if escape_markdown:
+        if self.escape_markdown:
             result = disnake.utils.escape_markdown(result)
-        elif remove_markdown:
+        elif self.remove_markdown:
             result = disnake.utils.remove_markdown(result)
 
         # Completely ensure no mentions escape:
         return disnake.utils.escape_mentions(result)
 
-    return convert
-
 async def tag_name(inter: disnake.ApplicationCommandInteraction, argument: str):
-    converted = await clean_inter_content()(inter, argument)
+    converted = await clean_content()(inter, argument)
     lower = converted.lower().strip()
 
     if not lower:
@@ -134,7 +139,7 @@ class Time:
             if getattr(dt, field) is None:
                 setattr(dt, field, getattr(now, field))
 
-        self.dt = dt
+        self.dt = dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
         self._past = dt < now
 # usage: arg: str = commands.param(converter=Time)
 

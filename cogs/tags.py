@@ -13,7 +13,7 @@ from tortoise.exceptions import IntegrityError
 from .utils.db import in_transaction, TransactionWrapper, F
 from .utils.db.tags import TagTable, TagLookup
 from .utils.send import safe_send_prepare
-from .utils.converters import tag_name, clean_inter_content
+from .utils.converters import tag_name, clean_content
 from .utils import paginator
 from .utils.views import Confirm
 
@@ -165,18 +165,18 @@ class TagCreateView(disnake.ui.View):
             return
 
         if msg.content:
-            clean_content = await clean_inter_content()(interaction, msg.content)
+            content = clean_content()(interaction, msg.content)
         else:
-            clean_content = msg.content
+            content = msg.content
 
         if msg.attachments:
-            clean_content += f'\n{msg.attachments[0].url}'
+            content += f'\n{msg.attachments[0].url}'
 
         c = None
-        if len(clean_content) > 2000:
+        if len(content) > 2000:
             c = 'Tag content is a maximum of 2000 characters.'
         else:
-            self.content = clean_content
+            self.content = content
 
         self.unlock_all()
         await self.message.edit(content=c, embed=self.prepare_embed(), view=self)
@@ -251,7 +251,7 @@ class TagSource(paginator.BaseListSource):
         ])
         return e
 
-name_converter = clean_inter_content()
+name_converter = clean_content()
 async def name_autocomp(inter: disnake.ApplicationCommandInteraction, user_input: str):
     user_input = await name_converter(inter, user_input)
     rows = await (TagLookup
