@@ -10,7 +10,6 @@ from .utils import time
 if TYPE_CHECKING:
     from bot import DisnakeHelper
     from .reminder import Reminder, Timer
-    from disnake import ApplicationCommandInteraction as ACI
 
 DISNAKE_GUILD_ID = 808030843078836254
 MUTE_ROLE_ID = 0
@@ -35,7 +34,7 @@ class Moderation(commands.Cog):
     @mute.sub_command(name='temp')
     async def mute_temporally(
         self,
-        inter: ACI,
+        inter: disnake.ApplicationCommandInteraction,
         member: disnake.Member,
         duration = commands.Param(converter=FutureTime, autocomplete=futuretime_autocomp),
         reason = commands.Param(..., converter=ActionReason, autocomplete=action_autocomp)
