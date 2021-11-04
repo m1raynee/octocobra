@@ -226,7 +226,7 @@ class Reminder(commands.Cog):
         await self.create_timer(
             when.dt, 'reminder', inter.author.id,
             inter.channel.id, reason,
-            created=inter.created_at,
+            created=inter.created_at.replace(tzinfo=None),
             message_id=msg.id
         )
 
