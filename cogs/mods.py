@@ -77,19 +77,13 @@ class Moderation(commands.Cog):
 
         if mod_id != member_id:
             moderator = await guild.get_or_fetch_member(mod_id)
-            if moderator is None:
-                try:
-                    moderator = await self.bot.fetch_user(mod_id)
-                except:
-                    # request failed somehow
-                    moderator = f'Mod ID {mod_id}'
-                else:
-                    moderator = f'{moderator} (ID: {mod_id})'
-            else:
+            if moderator is not None:
                 moderator = f'{moderator} (ID: {mod_id})'
+            else:
+                moderator = f'Mod ID {mod_id}'
 
             reason = f'Automatic unmute from timer made on {timer.created_at} by {moderator}.'
-        else:  # selfmute
+        else:
             reason = f'Expiring self-mute made on {timer.created_at} by {member}'
 
         try:

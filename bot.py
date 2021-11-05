@@ -49,8 +49,11 @@ class DisnakeHelper(commands.Bot):
 
     async def on_ready(self):
         print(f'Logged on as {self.user} (ID: {self.user.id})')
+
     
     async def on_slash_command_error(self, interaction: disnake.ApplicationCommandInteraction, exception: commands.CommandError) -> None:
+        exception = getattr(exception, 'original', exception)
+
         if interaction.response.is_done():
             m = interaction.followup.send
         else:
@@ -64,14 +67,13 @@ class DisnakeHelper(commands.Bot):
         tb = '\n'.join(traceback.format_exception(type(exception), exception, exception.__traceback__))
         await self.owner.send((
             '```py\n'
-            f'{interaction.user = }\n'
-            f'{interaction.channel.id = }\n'
-            f'{interaction.application_command.name = }\n'
-            f'{interaction.options = }\n'
+            f'user = {interaction.user}\n'
+            f'channel.id = {interaction.channel.id}\n'
+            f'qualified_name = {interaction.application_command.qualified_name}\n'
+            f'options = {interaction.options}\n'
             '```'
         ))
         await self.owner.send(**(await safe_send_prepare(f'```py\n{tb}\n```')))
-        super().on_slash_command_error
 
     async def on_error(self, event_method: str, *args, **kwargs) -> None:
         await self.owner.send((
