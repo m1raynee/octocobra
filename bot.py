@@ -1,3 +1,4 @@
+from typing import Mapping
 import aiohttp
 import traceback
 
@@ -35,6 +36,7 @@ class DisnakeHelper(commands.Bot):
             **kwargs
         )
         self.startup = disnake.utils.utcnow()
+        self.defer_pool: Mapping[int, disnake.Interaction] = {}
 
         for ext in initial_extensions:
             try:
