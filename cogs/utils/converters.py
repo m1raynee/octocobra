@@ -70,7 +70,7 @@ class clean_content:
         return disnake.utils.escape_mentions(result)
 
 async def tag_name(inter: disnake.ApplicationCommandInteraction, argument: str):
-    converted = await clean_content()(inter, argument)
+    converted = clean_content()(inter, argument)
     lower = converted.lower().strip()
 
     if not lower:
