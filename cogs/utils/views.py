@@ -41,6 +41,7 @@ class ConfirmButton(ui.Button['Confirm']):
     async def callback(self, interaction: MessageInteraction):
         await interaction.response.defer()
         self.view.value = self.value
+        self.view.stop()
 
 class Confirm(_BaseView):
     def __init__(self, *, author_id: int, timeout: Optional[float] = 180.):
