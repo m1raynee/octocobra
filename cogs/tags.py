@@ -98,10 +98,9 @@ class TagCreateView(disnake.ui.View):
     def unlock_all(self):
         for child in self.children:
             if child.label == 'Confirm':
-                if self._edit:
-                    if self._edit.content != self.content or self._edit.prefix != self.prefix:
-                        child.disabled = False
-                        continue
+                if self._edit and (self._edit.content != self.content or self._edit.prefix != self.prefix):
+                    child.disabled = False
+                    continue
                 elif self.name is not None and self.content is not None:
                     child.disabled = False
                 else:
