@@ -190,7 +190,7 @@ class TagCreateView(disnake.ui.View):
             return
 
         self.unlock_all()
-        await self.message.edit(embed=self.prepare_embed())
+        await self.message.edit(embed=self.prepare_embed(), view=self)
 
     @ui.button(
         label='Confirm',
