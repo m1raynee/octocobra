@@ -220,24 +220,23 @@ class Disnake(commands.Cog, name='disnake'):
         """
         bot: disnake.User = bot_id
 
-        async def callback(res, inter: disnake.MessageInteraction):
-            if res is None:
-                content = 'You took too long.'
-            elif res:
-                content = 'You will get a DM regarding the status of your bot, so make sure you have them on.'
-            else:
-                content = 'Canceled'
-            await inter.response.edit_message(view=None)
-            await inter.followup.send(content)
 
-        view = Confirm(callback, listen_to=(inter.author.id,))
+        view = Confirm(author_id=inter.author.id)
         await inter.response.send_message(
             f'You\'re going to add {bot} on this server.\n'
             'To agree, please press "Confirm" button',
             view = view
         )
-        await view.wait()
-        if not view.value:
+        v = await view.start()
+
+        if v is None:
+            content = 'You took too long.'
+        elif v:
+            content = 'You will get a DM regarding the status of your bot, so make sure you have them on.'
+        else:
+            content = 'Canceled'
+        await inter.edit_original_message(content, view=None)
+        if not v:
             return
 
         g = disnake.Object(DISNAKE_GUILD_ID)

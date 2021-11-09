@@ -198,10 +198,6 @@ class TagCreateView(disnake.ui.View):
         disabled=True
     )
     async def comfirm_button(self, button: disnake.Button, interaction: disnake.MessageInteraction):
-        if self._edit and self._edit.content == self.content:
-            return await interaction.response.edit_message(
-                content='Content still the same...\nHint: edit it by pressing "Content"'
-            )
         for child in self.children:
             child.disabled = True
         await interaction.response.edit_message(view=self)
@@ -540,20 +536,20 @@ class Tags(commands.Cog):
 
         msg = str(tag)
 
-        async def callback(value, interaction):
-            if value is None:
-                content = 'You took too long. Goodbye.'
-            elif value:
-                await tag.delete()
-                content = f'{msg.capitalize()} {name} was deleted.'
-            else:
-                content = 'Canceled'
-            
-            await interaction.response.edit_message(content=content, view=None)
         
-        view = Confirm(callback, listen_to=self.bot.ids(inter.author.id))
+        view = Confirm(author_id=inter.author.id)
         await inter.response.send_message(f'Are you sure you wanna delete {msg} "{name}"? It cannot be undo.', view=view)
+        value = await view.start()
 
+        if value is None:
+            content = 'You took too long. Goodbye.'
+        elif value:
+            await tag.delete()
+            content = f'{msg.capitalize()} {name} was deleted.'
+        else:
+            content = 'Canceled'
+        
+        await inter.edit_original_message(content=content, view=None)
 
 def setup(bot):
     bot.add_cog(Tags(bot))

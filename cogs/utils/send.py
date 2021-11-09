@@ -25,6 +25,6 @@ async def wait_for_deletion(
     destination: disnake.abc.Messageable,
     timeout: float = 60 * 5
 ) -> None:
-    view = Delete(listen_to=[author_id], timeout=timeout)
+    view = Delete(author_id=author_id, timeout=timeout)
     message_kwargs['view'] = view
     await destination.send(**message_kwargs)

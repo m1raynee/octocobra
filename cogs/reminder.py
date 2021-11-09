@@ -290,21 +290,22 @@ class Reminder(commands.Cog):
 
         if total == 0:
             return await inter.response.send_message('You don\'t have any reminders to delete.', ephemeral=True)
-        async def callback(value, interaction):
-            if not value:
-                return await interaction.response.send_message('Aborting')
-            await (Reminders
-                .filter(event='reminder', author_id=inter.author.id)
-                .delete()
-            )
-            if self._current_timer and self._current_timer.author_id == inter.author.id:
-                self._task.cancel()
-                self._task = self.bot.loop.create_task(self.dispatch_timers())
 
-            await interaction.response.edit_message(f'Successfully deleted {total} reminder{"s" if total > 1 else ""}.')
-
-        view = Confirm(callback, listen_to=(inter.author.id,))
+        view = Confirm(author_id=inter.author.id)
         await inter.response.send_message(f'Are you sure you want to delete {total} reminder{"s" if total > 1 else ""}?', view=view)
+
+        if not await view.start():
+            return await inter.edit_original_message('Aborting')
+        await (Reminders
+            .filter(event='reminder', author_id=inter.author.id)
+            .delete()
+        )
+        if self._current_timer and self._current_timer.author_id == inter.author.id:
+            self._task.cancel()
+            self._task = self.bot.loop.create_task(self.dispatch_timers())
+
+        await inter.edit_original_message(f'Successfully deleted {total} reminder{"s" if total > 1 else ""}.')
+
 
     @commands.Cog.listener()
     async def on_reminder_timer_complete(self, timer: Timer):
