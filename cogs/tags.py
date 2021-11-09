@@ -50,7 +50,7 @@ class PrefixView(ui.View):
         return '\N{BOOKMARK}'
 
 class TagCreateView(disnake.ui.View):
-    message: disnake.Message
+    message: disnake.InteractionMessage
 
     def __init__(
         self,
@@ -98,10 +98,8 @@ class TagCreateView(disnake.ui.View):
     def unlock_all(self):
         for child in self.children:
             if child.label == 'Confirm':
-                if self._edit and (self._edit.content != self.content or self._edit.prefix != self.prefix):
-                    child.disabled = False
-                    continue
-                elif self.name is not None and self.content is not None:
+                if (self._edit and (self._edit.content != self.content or self._edit.prefix != self.prefix)) \
+                        or (self.name is not None and self.content is not None):
                     child.disabled = False
                 else:
                     child.disabled = True
