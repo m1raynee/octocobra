@@ -235,7 +235,7 @@ class Disnake(commands.Cog, name='disnake'):
             content = 'You will get a DM regarding the status of your bot, so make sure you have them on.'
         else:
             content = 'Canceled'
-        await inter.edit_original_message(content, view=None)
+        await inter.edit_original_message(content=content, view=None)
         if not v:
             return
 
