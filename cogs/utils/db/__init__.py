@@ -6,14 +6,17 @@ from tortoise.backends.sqlite.client import TransactionWrapper
 
 TORTOISE_ORM = {
     'apps': {
-        'app': {
-            'models': [
-                'cogs.utils.db.tags',
-                'cogs.utils.db.remind',
-                'cogs.utils.db.users',
-                'aerich.models'
-            ],
+        'tags': {
+            'models': ['cogs.utils.db.tags', 'aerich.models'],
             'default_connection': 'master'
+        },
+        'remind': {
+            'models': ['cogs.utils.db.remind', 'aerich.models'],
+            'default_connection': 'master',
+        },
+        'users': {
+            'models': ['cogs.utils.db.users', 'aerich.models'],
+            'default_connection': 'master',
         }
     },
     'connections': {'master': 'sqlite://data/db.sqlite'}
