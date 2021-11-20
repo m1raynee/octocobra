@@ -1,13 +1,15 @@
 """Credits: https://github.com/python-discord/bot/blob/main/bot/exts/info/code_snippets.py"""
 
 import re
-import textwrap
+from textwrap import dedent
 from contextlib import suppress
 from typing import Callable, List, Tuple, Union
-from urllib.parse import quote_plus
 
+from disnake import (
+    Message,
+    NotFound
+)
 from disnake.ext import commands
-import disnake
 from aiohttp import ClientResponseError
 
 from .utils.send import wait_for_deletion
@@ -65,7 +67,7 @@ class Snippets(commands.Cog):
 
         # Gets the code lines, dedent them, and inserts zero-width spaces to prevent Markdown injection
         required = '\n'.join(split_file_contents[start_line - 1:end_line])
-        required = textwrap.dedent(required).rstrip().replace('`', '`\u200b')
+        required = dedent(required).rstrip().replace('`', '`\u200b')
 
         # Extracts the code language and checks whether it's a "valid" language
         language = file_path.split('/')[-1].split('.')[-1]
@@ -164,12 +166,12 @@ class Snippets(commands.Cog):
         return '\n'.join(sorted(all_snippets))
 
     @commands.Cog.listener()
-    async def on_message(self, message: disnake.Message):
+    async def on_message(self, message: Message):
         snippets = await self.parse_snippets(message.content)
         destination = message.channel
 
         if 0 < len(snippets) <= 2000 and snippets.count('\n') <= 15:
-            with suppress(disnake.NotFound):
+            with suppress(NotFound):
                 await message.edit(suppress=True)
             kwargs = {'content': snippets}
 

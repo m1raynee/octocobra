@@ -1,21 +1,37 @@
+from __future__ import annotations
+
 import asyncio
 import datetime
-from os import name
-from typing import Optional, Union, List
+from typing import TYPE_CHECKING, Optional, Union, List
 from functools import partial
 from textwrap import shorten
 
+from disnake import (
+    ui,
+    SelectOption,
+    MessageInteraction,
+    InteractionMessage,
+    ApplicationCommandInteraction,
+    Embed,
+    ButtonStyle,
+    Button,
+    OptionChoice
+)
 from disnake.ext import commands
-from disnake import ui
-import disnake
-from tortoise.exceptions import IntegrityError
+from disnake.utils import escape_markdown
 
-from .utils.db import in_transaction, TransactionWrapper, F
+from tortoise.exceptions import IntegrityError
+from tortoise.transactions import in_transaction
+from tortoise.expressions import F
+
 from .utils.db.tags import TagTable, TagLookup
 from .utils.send import safe_send_prepare
 from .utils.converters import tag_name, clean_content
 from .utils import paginator
 from .utils.views import Confirm
+if TYPE_CHECKING:
+    from tortoise.backends.sqlite.client import TransactionWrapper
+    from bot import DisnakeHelper
 
 TAG_PREFIXES = {
     '\N{NOTEBOOK WITH DECORATIVE COVER}': ('Modules and packages', 'Links to important libraries and extantions'),
@@ -29,12 +45,12 @@ class TagPrefixSelect(ui.Select['PrefixView']):
         super().__init__(
             placeholder='Select the appropriate prefix',
             options=[
-                disnake.SelectOption(label=v[0], description=v[1], emoji=k, value=k)
+                SelectOption(label=v[0], description=v[1], emoji=k, value=k)
                 for k, v in TAG_PREFIXES.items()
             ]
         )
     
-    async def callback(self, interaction: disnake.MessageInteraction):
+    async def callback(self, interaction: MessageInteraction):
         await interaction.response.edit_message(content='You can dismiss this message.', view=None)
         self.view.selected = self.values[0]
         self.view.stop()
@@ -49,12 +65,12 @@ class PrefixView(ui.View):
             return self.selected
         return '\N{BOOKMARK}'
 
-class TagCreateView(disnake.ui.View):
-    message: disnake.InteractionMessage
+class TagCreateView(ui.View):
+    message: InteractionMessage
 
     def __init__(
         self,
-        init_interaction: disnake.Interaction,
+        init_interaction: ApplicationCommandInteraction,
         cog: 'Tags',
         edit: Optional[TagTable] = None
     ):
@@ -80,7 +96,7 @@ class TagCreateView(disnake.ui.View):
         return self._init_interaction.channel == msg.channel and msg.author == self._init_interaction.author
 
     def prepare_embed(self):
-        e = disnake.Embed(title='Tag creation', color=0x0084c7)
+        e = Embed(title='Tag creation', color=0x0084c7)
         e.add_field(name='Name', value=self.name, inline=False)
         e.add_field(name='Content', value=shorten(str(self.content), 1024), inline=False)
         e.add_field(name='Prefix', value=f'\\{self.prefix} {TAG_PREFIXES[self.prefix][0]}', inline=False)
@@ -106,7 +122,7 @@ class TagCreateView(disnake.ui.View):
             else:
                 child.disabled = False
 
-    async def interaction_check(self, interaction: disnake.Interaction) -> bool:
+    async def interaction_check(self, interaction: MessageInteraction) -> bool:
         if interaction.author == self._init_interaction.author:
             return True
         await interaction.response.send_message('You\'re not an author of this View.', ephemeral=True)
@@ -114,9 +130,9 @@ class TagCreateView(disnake.ui.View):
 
     @ui.button(
         label='Name',
-        style=disnake.ButtonStyle.secondary
+        style=ButtonStyle.secondary
     )
-    async def name_button(self, button: disnake.Button, interaction: disnake.MessageInteraction):
+    async def name_button(self, button: Button, interaction: MessageInteraction):
         self.lock_all()
         msg_content = 'Cool, let\'s make a name. Send the tag name in the next message...'
 
@@ -150,9 +166,9 @@ class TagCreateView(disnake.ui.View):
     
     @ui.button(
         label='Content',
-        style=disnake.ButtonStyle.secondary
+        style=ButtonStyle.secondary
     )
-    async def content_button(self, button: disnake.Button, interaction: disnake.MessageInteraction):
+    async def content_button(self, button: Button, interaction: MessageInteraction):
         self.lock_all()
         msg_content = f'Cool, let\'s {"edit the" if self._edit else "make a"} content. Send the tag content in the next message...'
 
@@ -180,9 +196,9 @@ class TagCreateView(disnake.ui.View):
     
     @ui.button(
         label='Prefix',
-        style=disnake.ButtonStyle.secondary
+        style=ButtonStyle.secondary
     )
-    async def prefix_button(self, button: disnake.Button, interaction: disnake.MessageInteraction):
+    async def prefix_button(self, button: Button, interaction: MessageInteraction):
         view = PrefixView()
         await interaction.response.send_message('Please choose one of prefixes', view=view, ephemeral=True)
         self.prefix = await view.start()
@@ -194,10 +210,10 @@ class TagCreateView(disnake.ui.View):
 
     @ui.button(
         label='Confirm',
-        style=disnake.ButtonStyle.success,
+        style=ButtonStyle.success,
         disabled=True
     )
-    async def comfirm_button(self, button: disnake.Button, interaction: disnake.MessageInteraction):
+    async def comfirm_button(self, button: Button, interaction: MessageInteraction):
         for child in self.children:
             child.disabled = True
         await interaction.response.edit_message(view=self)
@@ -208,17 +224,17 @@ class TagCreateView(disnake.ui.View):
     
     @ui.button(
         label='Abort',
-        style=disnake.ButtonStyle.danger
+        style=ButtonStyle.danger
     )
-    async def abort_button(self, button: disnake.Button, interaction: disnake.MessageInteraction):
-        self._cog.remove_in_progress_tag(name)
+    async def abort_button(self, button: Button, interaction: MessageInteraction):
+        self._cog.remove_in_progress_tag(self.name)
         await interaction.response.edit_message(
             content=f'Tag {"edi" if self._edit else "crea"}tion aborted.', # cspell: ignoreline
             view=None, embed=None
         )
         self.stop()
 
-    async def on_error(self, error: Exception, item, interaction: disnake.MessageInteraction) -> None:
+    async def on_error(self, error: Exception, item, interaction: MessageInteraction) -> None:
         if isinstance(error, asyncio.TimeoutError):
             if interaction.response.is_done():
                 method = self.message.edit
@@ -245,7 +261,7 @@ class TagSource(paginator.BaseListSource):
         return e
 
 name_converter = clean_content()
-async def name_autocomp(inter: disnake.ApplicationCommandInteraction, user_input: str):
+async def name_autocomp(inter: ApplicationCommandInteraction, user_input: str):
     user_input = name_converter(inter, user_input)
     rows = await (TagLookup
         .filter(name__contains=user_input)
@@ -264,8 +280,8 @@ name_param = partial(commands.param, converter=name_converter, autocomp=name_aut
 class Tags(commands.Cog):
     """Commands to fetch something by a tag name"""
 
-    def __init__(self, bot):
-        self.bot: commands.Bot = bot
+    def __init__(self, bot: DisnakeHelper):
+        self.bot = bot
         self._tags_being_made = set()
 
     async def get_tag(self, name: str, original=True, only=('id', 'name', 'content')) -> Union[TagTable, TagLookup]:
@@ -299,7 +315,7 @@ class Tags(commands.Cog):
 
         return tag
 
-    async def create_tag(self, inter: disnake.Interaction, name, content, prefix):
+    async def create_tag(self, inter: MessageInteraction, name, content, prefix):
         async with in_transaction() as tr:
             tr: TransactionWrapper
             try:
@@ -343,13 +359,13 @@ class Tags(commands.Cog):
     @tag.sub_command(name='show')
     async def tag_show(
         self,
-        inter: disnake.ApplicationCommandInteraction,
+        inter: ApplicationCommandInteraction,
         name: str = name_param(),
         type = commands.param(
             'rich',
             choices = [
-                disnake.OptionChoice('Rich', 'rich'),
-                disnake.OptionChoice('Raw', 'raw')
+                OptionChoice('Rich', 'rich'),
+                OptionChoice('Raw', 'raw')
             ]
         )
     ):
@@ -366,7 +382,7 @@ class Tags(commands.Cog):
             return await inter.response.send_message(e, ephemeral=True)
         
         if type == 'raw':
-            first_step = disnake.utils.escape_markdown(tag.content)
+            first_step = escape_markdown(tag.content)
             kwargs = await safe_send_prepare(first_step.replace('<', '\\<'), escape_mentions=False)
         else:
             kwargs = dict(content=tag.content)
@@ -378,7 +394,7 @@ class Tags(commands.Cog):
         )
 
     @tag.sub_command(name='create')
-    async def tag_create(self, inter: disnake.ApplicationCommandInteraction):
+    async def tag_create(self, inter: ApplicationCommandInteraction):
         """Creates a new tag owned by you."""
         view = TagCreateView(inter, self)
         await inter.response.send_message(embed=view.prepare_embed(), view=view)
@@ -397,7 +413,7 @@ class Tags(commands.Cog):
     @tag.sub_command(name='alias')
     async def tag_alias(
         self,
-        inter: disnake.ApplicationCommandInteraction,
+        inter: ApplicationCommandInteraction,
         new_name: str = commands.param(converter=name_converter),
         old_name: str = name_param()
     ):
@@ -413,7 +429,7 @@ class Tags(commands.Cog):
             .first()
             .prefetch_related('original')
         )
-        embed = disnake.Embed(color = 0x0084c7)
+        embed = Embed(color = 0x0084c7)
         if not tag_lookup:
             embed.description = f'A tag with the name of "{old_name}" does not exist.'
             return await inter.response.send_message(embed=embed,ephemeral=True)
@@ -433,7 +449,7 @@ class Tags(commands.Cog):
     @tag.sub_command(name='info')
     async def tag_info(
         self,
-        inter: disnake.ApplicationCommandInteraction,
+        inter: ApplicationCommandInteraction,
         name: str = name_param()
     ):
         """
@@ -445,7 +461,7 @@ class Tags(commands.Cog):
         tag = await self.get_tag(name, original=False, only=('id', 'name', 'owner_id', 'created_at', 'uses'))
         author = self.bot.get_user(tag.owner_id) or (await self.bot.fetch_user(tag.owner_id))
 
-        embed = disnake.Embed(
+        embed = Embed(
             title = tag.name,
             color = 0x0084c7
         ).set_author(
@@ -475,7 +491,7 @@ class Tags(commands.Cog):
         await inter.response.send_message(embed=embed)
 
     @tag.sub_command(name='all')
-    async def tag_all(self, inter: disnake.ApplicationCommandInteraction):
+    async def tag_all(self, inter: ApplicationCommandInteraction):
         """
         Shows all existed tags
         """
@@ -491,7 +507,7 @@ class Tags(commands.Cog):
     @tag.sub_command(name='edit')
     async def tag_edit(
         self,
-        inter: disnake.ApplicationCommandInteraction,
+        inter: ApplicationCommandInteraction,
         name: str = name_param()
     ):
         """
@@ -522,7 +538,7 @@ class Tags(commands.Cog):
     @tag.sub_command(name='delete')
     async def tag_delete(
         self,
-        inter: disnake.ApplicationCommandInteraction,
+        inter: ApplicationCommandInteraction,
         name: str = name_param()
     ):
         """

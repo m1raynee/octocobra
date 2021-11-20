@@ -2,7 +2,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
 from disnake.ext import commands
-import disnake
+from disnake import (
+    ApplicationCommandInteraction,
+    Member,
+    Object,
+    HTTPException,
+)
+from disnake.utils import escape_mentions
 
 from .utils.converters import ActionReason, FutureTime, futuretime_autocomp, action_autocomp
 from .utils import time
@@ -25,8 +31,8 @@ class Moderation(commands.Cog):
     @mute.sub_command(name='temp')
     async def mute_temporally(
         self,
-        inter: disnake.ApplicationCommandInteraction,
-        member: disnake.Member,
+        inter: ApplicationCommandInteraction,
+        member: Member,
         duration = commands.Param(converter=FutureTime, autocomplete=futuretime_autocomp),
         reason = commands.Param(..., converter=ActionReason, autocomplete=action_autocomp)
     ):
@@ -49,8 +55,8 @@ class Moderation(commands.Cog):
             f'Action done by {inter.author} (ID: {inter.author.id})'
 
         try:
-            await member.add_roles(disnake.Object(MUTE_ROLE_ID), reason=reason.ret)
-        except disnake.HTTPException:
+            await member.add_roles(Object(MUTE_ROLE_ID), reason=reason.ret)
+        except HTTPException:
             return await inter.response.send_message(f'{member.mention} already muted.', ephemeral=True)
 
         await reminder.create_timer(
@@ -58,7 +64,7 @@ class Moderation(commands.Cog):
             created = inter.created_at
         )
         await inter.response.send_message(
-            f'Muted {disnake.utils.escape_mentions(str(member))} '
+            f'Muted {escape_mentions(str(member))} '
             f'for {time.format_relative(duration.dt)}'
         )
 
@@ -87,8 +93,8 @@ class Moderation(commands.Cog):
             reason = f'Expiring self-mute made on {timer.created_at} by {member}'
 
         try:
-            await member.remove_roles(disnake.Object(id=MUTE_ROLE_ID), reason=reason)
-        except disnake.HTTPException:
+            await member.remove_roles(Object(id=MUTE_ROLE_ID), reason=reason)
+        except HTTPException:
             pass
 
 def setup(bot):

@@ -30,7 +30,4 @@ var/
 *.sqlite-shm
 *.sqlite-wal
 /awskeys
-run.sh
 console.log
-/migrations
-aerich.ini

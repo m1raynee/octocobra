@@ -1,4 +1,9 @@
-from . import *
+from tortoise.models import Model
+from tortoise.fields import (
+    BigIntField,
+    DatetimeField,
+    CharField,
+)
 
 class Commands(Model):
     id = BigIntField(pk=True)

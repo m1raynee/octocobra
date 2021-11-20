@@ -8,7 +8,16 @@ import zlib
 
 from disnake.ext import commands
 from disnake.utils import oauth_url
-import disnake
+from disnake import (
+    ApplicationCommandInteraction,
+    Embed,
+    User,
+    Object,
+    Colour,
+    RawReactionActionEvent,
+    Member
+)
+from disnake.abc import Messageable
 import aiohttp
 
 from .utils import fuzzy
@@ -151,7 +160,7 @@ class Disnake(commands.Cog, name='disnake'):
 
         self._cache = cache
     
-    async def do_rtfm(self, inter: disnake.ApplicationCommandInteraction, key: str, obj, keys = False):# -> Union[str, List[str]]:
+    async def do_rtfm(self, inter: ApplicationCommandInteraction, key: str, obj, keys = False):# -> Union[str, List[str]]:
         if not hasattr(self, '_cache'):
             await self.prepare_cache()
 
@@ -164,7 +173,7 @@ class Disnake(commands.Cog, name='disnake'):
         if key in ('latest', 'dpy-master'):
             # point the abc.Messageable types properly:
             q = obj.lower()
-            for name in dir(disnake.abc.Messageable):
+            for name in dir(Messageable):
                 if name[0] == '_':
                     continue
                 if q == name:
@@ -178,7 +187,7 @@ class Disnake(commands.Cog, name='disnake'):
         if len(matches) == 0:
             return await inter.response.send_message('Could not find anything. Sorry.')
 
-        e = disnake.Embed(
+        e = Embed(
             description = '\n'.join(f'[`{key}`]({url})' for key, url in matches),
             colour=0x0084c7
         )
@@ -207,7 +216,7 @@ class Disnake(commands.Cog, name='disnake'):
     @commands.slash_command()
     async def addbot(
         self,
-        inter: disnake.ApplicationCommandInteraction,
+        inter: ApplicationCommandInteraction,
         bot_id: str = commands.param(converter=UserCondition(bot=True)),
         reason: str = commands.param()
     ):
@@ -218,7 +227,7 @@ class Disnake(commands.Cog, name='disnake'):
         bot_id: Bot user id
         reason: Why you want your bot here?
         """
-        bot: disnake.User = bot_id
+        bot: User = bot_id
 
 
         view = Confirm(author_id=inter.author.id)
@@ -239,11 +248,11 @@ class Disnake(commands.Cog, name='disnake'):
         if not v:
             return
 
-        g = disnake.Object(DISNAKE_GUILD_ID)
+        g = Object(DISNAKE_GUILD_ID)
         slash_url = oauth_url(bot.id, guild=g, scopes=('bot', 'applications.commands'))
         bot_url = oauth_url(bot.id, guild=g)
 
-        e = disnake.Embed(description=reason, color=disnake.Colour.orange())
+        e = Embed(description=reason, color=Colour.orange())
         e.set_author(name=inter.author.display_name, icon_url=inter.author.display_avatar)
         e.set_thumbnail(url=bot.display_avatar)
         e.add_field(name='Name', value=str(bot))
@@ -256,7 +265,7 @@ class Disnake(commands.Cog, name='disnake'):
             await msg.add_reaction(r)
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload: disnake.RawReactionActionEvent):
+    async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
         if payload.channel_id != DISNAKE_ADDBOT_CHANNEL:
             return
         if not (payload.member and payload.member.guild_permissions.manage_guild):
@@ -271,17 +280,17 @@ class Disnake(commands.Cog, name='disnake'):
         if (
             payload.emoji.id in (892770746013724683, 892770746034704384)
             and len(message.embeds) != 0
-            and (embed := message.embeds[0]).colour == disnake.Colour.orange()
+            and (embed := message.embeds[0]).colour == Colour.orange()
         ):
             embed.add_field(name='Responding admin', value=f'<@{payload.user_id}>')
             bot_id = int(embed.fields[2].value)
             member_id = int(embed.fields[3].value)
             if payload.emoji.id == 892770746013724683:
-                embed.colour = disnake.Colour.green()
+                embed.colour = Colour.green()
                 user_content = f'Your bot <@{bot_id}> was invited to disnake server.'
                 add_content = f'<@{member_id}> will be aware about adding a bot.'
             else:
-                embed.colour = disnake.Colour.red()
+                embed.colour = Colour.red()
                 user_content = f'<@{bot_id}>\'s invitation was rejected.'
                 add_content = f'<@{member_id}> will be aware about rejecting a bot.'
             await message.edit(content=add_content, embed=embed)
@@ -290,13 +299,13 @@ class Disnake(commands.Cog, name='disnake'):
             await (await self.bot.get_or_fetch_user(member_id)).send(user_content)
     
     @commands.Cog.listener()
-    async def on_member_join(self, member: disnake.Member):
+    async def on_member_join(self, member: Member):
         if member.guild.id != DISNAKE_GUILD_ID:
             return
         if not member.bot:
             return
 
-        await member.add_roles(disnake.Object(DISNAKE_BOT_ROLE))
+        await member.add_roles(Object(DISNAKE_BOT_ROLE))
 
 
 def setup(bot):

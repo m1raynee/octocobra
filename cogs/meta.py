@@ -1,8 +1,7 @@
 import unicodedata
 
+from disnake import ApplicationCommandInteraction
 from disnake.ext import commands
-import disnake
-
 
 def to_string(c, *, for_autocomp=False):
     digit = f'{ord(c):x}'
@@ -28,7 +27,7 @@ class Meta(commands.Cog):
         self.bot: commands.Bot = bot
     
     @commands.slash_command()
-    async def charinfo(self, inter: disnake.ApplicationCommandInteraction,
+    async def charinfo(self, inter: ApplicationCommandInteraction,
         characters: str = commands.Param(autocomplete=charinfo_autocomp)
     ):
         """

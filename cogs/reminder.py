@@ -1,15 +1,30 @@
+from __future__ import annotations
+
 import asyncio
 import datetime
-import textwrap
+from textwrap import shorten
+from typing import TYPE_CHECKING
 
+from disnake import (
+    ConnectionClosed,
+    ApplicationCommandInteraction,
+    Embed,
+    HTTPException,
+    Thread,
+    TextChannel,
+    ui
+)
+from disnake.utils import format_dt, utcnow, MISSING
 from disnake.ext import commands
-import disnake
 
 from cogs.utils.converters import FutureTime, futuretime_autocomp
 
 from .utils.db.remind import Reminders
 from .utils.views import Confirm
 from .utils import time
+
+if TYPE_CHECKING:
+    from bot import DisnakeHelper
 
 
 class Timer:
@@ -59,7 +74,7 @@ class Timer:
 class Reminder(commands.Cog):
     """Reminders to do something."""
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: DisnakeHelper):
         self.bot = bot
         self._have_data = asyncio.Event(loop=bot.loop)
         self._current_timer = None
@@ -70,7 +85,7 @@ class Reminder(commands.Cog):
 
     async def get_active_timer(self, *, days=7):
         record = await (Reminders
-            .filter(expires__lt=disnake.utils.utcnow() + datetime.timedelta(days=days))
+            .filter(expires__lt=utcnow() + datetime.timedelta(days=days))
             .order_by('expires')
             .first()
         )
@@ -103,7 +118,7 @@ class Reminder(commands.Cog):
                 # so we're gonna cap it off at 40 days
                 # see: http://bugs.python.org/issue20493
                 timer = self._current_timer = await self.wait_for_active_timers(days=40)
-                now = disnake.utils.utcnow().replace(tzinfo=None)
+                now = utcnow().replace(tzinfo=None)
 
                 if timer.expires >= now:
                     to_sleep = (timer.expires - now).total_seconds()
@@ -112,7 +127,7 @@ class Reminder(commands.Cog):
                 await self.call_timer(timer)
         except asyncio.CancelledError:
             raise
-        except (OSError, disnake.ConnectionClosed):
+        except (OSError, ConnectionClosed):
             self._task.cancel()
             self._task = self.bot.loop.create_task(self.dispatch_timers())
 
@@ -154,7 +169,7 @@ class Reminder(commands.Cog):
         try:
             now = kwargs.pop('created')
         except KeyError:
-            now = disnake.utils.utcnow()
+            now = utcnow()
 
         # Remove timezone information since the database does not deal with it
         # cSpell:ignore astimezone
@@ -204,7 +219,7 @@ class Reminder(commands.Cog):
         pass
     
     @reminder.sub_command(name='create')
-    async def reminder_create(self, inter: disnake.ApplicationCommandInteraction,
+    async def reminder_create(self, inter: ApplicationCommandInteraction,
         when: str = commands.Param(converter=FutureTime, autocomplete=futuretime_autocomp),
         reason: str = '\u2026'
     ):
@@ -217,7 +232,7 @@ class Reminder(commands.Cog):
         """
 
 
-        await inter.response.send_message(f"Alright {inter.author.mention}, {disnake.utils.format_dt(when.dt, 'R')}: {reason}")
+        await inter.response.send_message(f"Alright {inter.author.mention}, {format_dt(when.dt, 'R')}: {reason}")
         msg = await inter.original_message()
         await self.create_timer(
             when.dt, 'reminder', inter.author.id,
@@ -227,7 +242,7 @@ class Reminder(commands.Cog):
         )
 
     @reminder.sub_command(name='list')
-    async def reminder_list(self, inter: disnake.ApplicationCommandInteraction):
+    async def reminder_list(self, inter: ApplicationCommandInteraction):
         """Shows the 10 latest currently running reminders."""
 
         records = await (Reminders
@@ -239,7 +254,7 @@ class Reminder(commands.Cog):
         if len(records) == 0:
             return await inter.response.send_message('No currently running reminders.', ephemeral=True)
 
-        e = disnake.Embed(colour=0x0084c7, title='Reminders')
+        e = Embed(colour=0x0084c7, title='Reminders')
 
         if len(records) == 10:
             e.set_footer(text='Only showing up to 10 reminders.')
@@ -247,13 +262,13 @@ class Reminder(commands.Cog):
             e.set_footer(text=f'{len(records)} reminder{"s" if len(records) > 1 else ""}')
 
         for row in records:
-            shorten = textwrap.shorten(row.extra['args'][1], width=512)
-            e.add_field(name=f'{row.id}: {disnake.utils.format_dt(row.expires, "R")}', value=shorten, inline=False)
+            short_desc = shorten(row.extra['args'][1], width=512)
+            e.add_field(name=f'{row.id}: {format_dt(row.expires, "R")}', value=short_desc, inline=False)
 
         await inter.response.send_message(embed=e, ephemeral=True)
 
     @reminder.sub_command(name='delete')
-    async def reminder_delete(self, inter: disnake.ApplicationCommandInteraction, id: int):
+    async def reminder_delete(self, inter: ApplicationCommandInteraction, id: int):
         """
         Deletes a reminder by its ID (use reminder list command).
         Parameters
@@ -278,7 +293,7 @@ class Reminder(commands.Cog):
         await inter.response.send_message('Successfully deleted reminder.', ephemeral=True)
 
     @reminder.sub_command(name='clear')
-    async def reminder_clear(self, inter: disnake.ApplicationCommandInteraction):
+    async def reminder_clear(self, inter: ApplicationCommandInteraction):
         """Clears all reminders you have set."""
 
         # For UX purposes this has to be two queries.
@@ -314,22 +329,22 @@ class Reminder(commands.Cog):
 
         try:
             channel = self.bot.get_channel(channel_id) or (await self.bot.fetch_channel(channel_id))
-        except disnake.HTTPException:
+        except HTTPException:
             return
 
-        guild_id = channel.guild.id if isinstance(channel, (disnake.TextChannel, disnake.Thread)) else '@me'
+        guild_id = channel.guild.id if isinstance(channel, (TextChannel, Thread)) else '@me'
         message_id = timer.kwargs.get('message_id')
         msg = f'<@{author_id}>, {timer.created_delta}: {message}'
-        view = disnake.utils.MISSING
+        view = MISSING
 
         if message_id:
             url = f'https://discord.com/channels/{guild_id}/{channel.id}/{message_id}'
-            view = disnake.ui.View()
-            view.add_item(disnake.ui.Button(label='Go to original message', url=url))
+            view = ui.View()
+            view.add_item(ui.Button(label='Go to original message', url=url))
 
         try:
             await channel.send(msg, view=view)
-        except disnake.HTTPException:
+        except HTTPException:
             return
 
 def setup(bot):
