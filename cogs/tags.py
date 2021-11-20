@@ -515,7 +515,7 @@ class Tags(commands.Cog):
         if hasattr(view, 'last_interaction'):
             await (TagTable
                 .filter(id=tag.id)
-                .update(content=view.content)
+                .update(content=view.content, prefix=view.prefix)
             )
             await view.last_interaction.followup.send(f'Tag {name} successfully updated.')
     
