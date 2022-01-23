@@ -88,7 +88,7 @@ class Disnake(commands.Cog, name='disnake'):
     def __init__(self, bot: DisnakeHelper):
         self.bot = bot
 
-    async def rtfm_autocomp(inter, value: str):
+    async def docs_autocomp(inter, value: str):
         ...
 
     def parse_object_inv(self, stream: SphinxObjectFileReader, url: str):
@@ -153,14 +153,14 @@ class Disnake(commands.Cog, name='disnake'):
             async with aiohttp.ClientSession(loop=self.bot.loop) as session:
                 async with session.get(page + '/objects.inv') as resp:
                     if resp.status != 200:
-                        raise RuntimeError('Cannot build rtfm lookup table, try again later.')
+                        raise RuntimeError('Cannot build docs lookup table, try again later.')
 
                     stream = SphinxObjectFileReader(await resp.read())
                     cache[key] = self.parse_object_inv(stream, page)
 
         self._cache = cache
     
-    async def do_rtfm(self, inter: ApplicationCommandInteraction, key: str, obj, keys = False):# -> Union[str, List[str]]:
+    async def do_docs(self, inter: ApplicationCommandInteraction, key: str, obj, keys = False):# -> Union[str, List[str]]:
         if not hasattr(self, '_cache'):
             await self.prepare_cache()
 
@@ -194,14 +194,14 @@ class Disnake(commands.Cog, name='disnake'):
         await inter.response.send_message(embed=e)
 
         # if ctx.guild and ctx.guild.id in self.bot._test_guilds:
-        #     query = 'INSERT INTO rtfm (user_id) VALUES ($1) ON CONFLICT (user_id) DO UPDATE SET count = rtfm.count + 1;'
+        #     query = 'INSERT INTO docs (user_id) VALUES ($1) ON CONFLICT (user_id) DO UPDATE SET count = docs.count + 1;'
         #     await ctx.db.execute(query, ctx.author.id)
 
     @commands.slash_command()
-    async def rtfm(
+    async def docs(
         self,
         inter,
-        object: str,# = commands.param(autocomp=rtfm_autocomp),
+        object: str,# = commands.param(autocomp=docs_autocomp),
         language: Branches = commands.param('latest')
     ):
         """
@@ -211,7 +211,7 @@ class Disnake(commands.Cog, name='disnake'):
         object: Requested object
         docs: Documentation key
         """
-        await self.do_rtfm(inter, language, object)
+        await self.do_docs(inter, language, object)
     
     @commands.slash_command()
     async def addbot(
