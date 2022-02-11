@@ -1,4 +1,4 @@
-from typing import Mapping
+from typing import Dict, Mapping
 import aiohttp
 import traceback
 
@@ -10,7 +10,7 @@ from cogs.utils.send import safe_send_prepare
 
 initial_extensions = (
     'cogs.tags',  # cogs
-    'cogs.disnake_only',
+    'cogs.guild_features',
     'cogs.snippets',
     'cogs.reminder',
     'cogs.mods',
@@ -28,12 +28,11 @@ SLASH_COMMAND_GUILDS = (
 #     return r
 
 class DisnakeHelper(commands.Bot):
-    def __init__(self, **kwargs):
+    def __init__(self):
         super().__init__(
             command_prefix=commands.when_mentioned_or('?'),
             intents=disnake.Intents.all(),
             test_guilds=SLASH_COMMAND_GUILDS,
-            **kwargs
         )
         self.startup = disnake.utils.utcnow()
         self.defer_pool: Mapping[int, disnake.Interaction] = {}
@@ -49,23 +48,20 @@ class DisnakeHelper(commands.Bot):
         self.loop.run_until_complete(db.init())
         self.http_session = aiohttp.ClientSession(loop=self.loop)
 
+        self._requesters: Dict[disnake.Thread, disnake.Member] = {}
+        self._is_being_closing: Dict[disnake.Thread, disnake.Member] = {}
+
     async def on_ready(self):
         print(f'Logged on as {self.user} (ID: {self.user.id})')
 
     
     async def on_slash_command_error(self, interaction: disnake.ApplicationCommandInteraction, exception: commands.CommandError) -> None:
         exception = getattr(exception, 'original', exception)
-
-        if interaction.response.is_done():
-            m = interaction.followup.send
-        else:
-            m = interaction.response.send_message
-
         if isinstance(exception, (RuntimeError, commands.CheckFailure)):
-            return await m(exception, ephemeral=True)
+            return await interaction.send(exception, ephemeral=True)
 
         content = f'Unknown error happen. Contact m1raynee. Error timestamp: {disnake.utils.utcnow().timestamp()}'
-        await m(content, ephemeral=True)
+        await interaction.send(content, ephemeral=True)
         tb = '\n'.join(traceback.format_exception(type(exception), exception, exception.__traceback__))
         await self.owner.send((
             '```py\n'
