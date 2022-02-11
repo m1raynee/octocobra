@@ -58,7 +58,8 @@ class NotificationsView(disnake.ui.View):
             if int(value) in (UPDATES_ROLE, NEWS_ROLE):
                 roles.append(disnake.Object(int(value)))
         await interaction.author.edit(roles=roles)
-        await interaction.response.edit_message(content="Your roles:"+', '.join([f'<@&{i}>' for i in select.values]), view=None)
+        await interaction.response.edit_message(content="Your roles: "+', '.join([f'<@&{i}>' for i in select.values]), view=None)
+        self.stop()
 
 class Disnake(commands.Cog, name='disnake'):
     """Docs and other disnake's guild things."""
