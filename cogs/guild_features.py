@@ -40,7 +40,7 @@ options = {
 
 class NotificationsView(disnake.ui.View):
     def __init__(self, *, member: disnake.Member):
-        super().__init__(timeout=15)
+        super().__init__(timeout=60)
 
         for role_id, opt in (opts:=options.copy()).items():
             if role_id in member._roles:
@@ -58,7 +58,10 @@ class NotificationsView(disnake.ui.View):
             if int(value) in (UPDATES_ROLE, NEWS_ROLE):
                 roles.append(disnake.Object(int(value)))
         await interaction.author.edit(roles=roles)
-        await interaction.response.edit_message(content="Your roles: "+', '.join([f'<@&{i}>' for i in select.values]), view=None)
+        await interaction.response.edit_message(
+            content="Your roles: "+', '.join(l:=[f'<@&{i}>' for i in select.values] if l else ('(there is nothing to see)',)),
+            view=None
+        )
         self.stop()
 
 class Disnake(commands.Cog, name='disnake'):
@@ -165,7 +168,7 @@ class Disnake(commands.Cog, name='disnake'):
     async def notifications(self, inter: ApplicationCommandInteraction):
         """Edit your notifications roles"""
 
-        view = NotificationsView(member=inter.author)
+        view = NotificationsView(member=await inter.guild.fetch_member(inter.author))
 
         await inter.send(
             'Choose which notification roles you want to get',
