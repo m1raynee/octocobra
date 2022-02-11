@@ -168,7 +168,7 @@ class Disnake(commands.Cog, name='disnake'):
     async def notifications(self, inter: ApplicationCommandInteraction):
         """Edit your notifications roles"""
 
-        view = NotificationsView(member=await inter.guild.fetch_member(inter.author))
+        view = NotificationsView(member=await inter.guild.fetch_member(inter.author.id))
 
         await inter.send(
             'Choose which notification roles you want to get',
