@@ -39,22 +39,23 @@ options = {
 }
 
 class NotificationsView(disnake.ui.View):
-    options = {
-        UPDATES_ROLE: disnake.SelectOption(
-            label='Updates', value=str(UPDATES_ROLE), description='Disnake library updates'
-        ),
-        NEWS_ROLE: disnake.SelectOption(
-            label='News', value=str(NEWS_ROLE), description='Community and library news'
-        )
-    }
-
     def __init__(self, *, member: disnake.Member):
         super().__init__(timeout=60)
 
-        for role_id, opt in self.options.items():
-            if role_id in member._roles:
+        options = [
+            disnake.SelectOption(
+                label='Updates', value=str(UPDATES_ROLE),
+                description='Disnake library updates', default=False
+            ),
+            disnake.SelectOption(
+                label='News', value=str(NEWS_ROLE),
+                description='Community and library news', default=False
+            )
+        ]
+        for opt in options:
+            if int(opt.value) in member._roles:
                 opt.default = True
-        self.select_role.options = list(self.options.values())
+        self.select_role.options = options
     
     @disnake.ui.select(
         placeholder='Select roles',
@@ -182,7 +183,7 @@ class Disnake(commands.Cog, name='disnake'):
     async def notifications(self, inter: ApplicationCommandInteraction):
         """Edit your notifications roles"""
 
-        view = NotificationsView(member=await inter.guild.fetch_member(inter.author.id))
+        view = NotificationsView(member=inter.author)
 
         await inter.send(
             'Choose which notification roles you want to get',
