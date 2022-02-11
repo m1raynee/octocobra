@@ -53,7 +53,7 @@ class NotificationsView(disnake.ui.View):
         min_values=0, max_values=2
     )
     async def select_role(self, select: disnake.ui.Select, interaction: disnake.MessageInteraction):
-        roles = [role_id for role_id in interaction.author._roles if role_id not in (UPDATES_ROLE, NEWS_ROLE)]
+        roles = [disnake.Object(role_id) for role_id in interaction.author._roles if role_id not in (UPDATES_ROLE, NEWS_ROLE)]
         for value in select.values:
             if int(value) in (UPDATES_ROLE, NEWS_ROLE):
                 roles.append(disnake.Object(int(value)))
