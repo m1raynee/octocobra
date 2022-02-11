@@ -58,8 +58,13 @@ class NotificationsView(disnake.ui.View):
             if int(value) in (UPDATES_ROLE, NEWS_ROLE):
                 roles.append(disnake.Object(int(value)))
         await interaction.author.edit(roles=roles)
+
+        if select.values:
+            r = ', '.join([f'<@&{i}>' for i in select.values])
+        else:
+            r = '(nothing)'
         await interaction.response.edit_message(
-            content="Your roles: "+', '.join(l:=[f'<@&{i}>' for i in select.values] if l else ('(there is nothing to see)',)),
+            content=f'Now you have these roles: {r}',
             view=None
         )
         self.stop()
