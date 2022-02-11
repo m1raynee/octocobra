@@ -50,7 +50,7 @@ class NotificationsView(disnake.ui.View):
                 if role_id in member._roles:
                     opt.default = True
 
-            self.select_role.options = opts.values()
+            self.select_role.options = list(opts.values())
             self.stop()
         self.bot = bot
     
