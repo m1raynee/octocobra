@@ -29,14 +29,6 @@ DISNAKE_MODS = (301295716066787332, 428483942329614336)
 UPDATES_ROLE = ...
 NEWS_ROLE = ...
 
-options = {
-    UPDATES_ROLE: disnake.SelectOption(
-        label='Updates', value=str(UPDATES_ROLE), description='Disnake library updates'
-    ),
-    NEWS_ROLE: disnake.SelectOption(
-        label='News', value=str(NEWS_ROLE), description='Community and library news'
-    )
-}
 
 class NotificationsView(disnake.ui.View):
     def __init__(self, bot: DisnakeHelper = None, member: disnake.Member = None):
@@ -45,19 +37,35 @@ class NotificationsView(disnake.ui.View):
         if bot is None:
             if member is None:
                 raise TypeError
+            
+            options = {
+                UPDATES_ROLE: disnake.SelectOption(
+                    label='Updates', value=str(UPDATES_ROLE), description='Disnake library updates'
+                ),
+                NEWS_ROLE: disnake.SelectOption(
+                    label='News', value=str(NEWS_ROLE), description='Community and library news'
+                )
+            }
 
-            for role_id, opt in (opts:=options.copy()).items():
+            for role_id, opt in options.items():
                 if role_id in member._roles:
                     opt.default = True
 
-            self.select_role.options = list(opts.values())
+            self.select_role.options = list(options.values())
             self.stop()
         self.bot = bot
     
     @disnake.ui.select(
         placeholder='Select roles',
         custom_id='feats:select-role',
-        max_values=2, options=options.values()
+        max_values=2, options=[
+            disnake.SelectOption(
+                label='Updates', value=str(UPDATES_ROLE), description='Disnake library updates'
+            ),
+            disnake.SelectOption(
+                label='News', value=str(NEWS_ROLE), description='Community and library news'
+            )
+        ]
     )
     async def select_role(self, interaction: disnake.MessageInteraction, select: disnake.ui.Select):
         roles = [role_id for role_id in interaction.author._roles if role_id not in (UPDATES_ROLE, NEWS_ROLE)]
