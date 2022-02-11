@@ -39,13 +39,22 @@ options = {
 }
 
 class NotificationsView(disnake.ui.View):
+    options = {
+        UPDATES_ROLE: disnake.SelectOption(
+            label='Updates', value=str(UPDATES_ROLE), description='Disnake library updates'
+        ),
+        NEWS_ROLE: disnake.SelectOption(
+            label='News', value=str(NEWS_ROLE), description='Community and library news'
+        )
+    }
+
     def __init__(self, *, member: disnake.Member):
         super().__init__(timeout=60)
 
-        for role_id, opt in (opts:=options.copy()).items():
+        for role_id, opt in self.options.items():
             if role_id in member._roles:
                 opt.default = True
-        self.select_role.options = list(opts.values())
+        self.select_role.options = list(self.options.values())
     
     @disnake.ui.select(
         placeholder='Select roles',
