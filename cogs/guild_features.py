@@ -26,8 +26,8 @@ DISNAKE_BOT_ROLE = 888451879753904138
 DISNAKE_ADDBOT_CHANNEL = 808032994668576829
 DISNAKE_MODS = (301295716066787332, 428483942329614336)
 
-UPDATES_ROLE = ...
-NEWS_ROLE = ...
+UPDATES_ROLE = 875141786799079474
+NEWS_ROLE = 875141841991893003
 
 
 class NotificationsView(disnake.ui.View):
@@ -68,7 +68,7 @@ class NotificationsView(disnake.ui.View):
             )
         ]
     )
-    async def select_role(self, interaction: disnake.MessageInteraction, select: disnake.ui.Select):
+    async def select_role(self, select: disnake.ui.Select, interaction: disnake.MessageInteraction):
         roles = [role_id for role_id in interaction.author._roles if role_id not in (UPDATES_ROLE, NEWS_ROLE)]
         for value in select.values:
             roles.append(disnake.Object(int(value)))
