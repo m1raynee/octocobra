@@ -39,7 +39,7 @@ options = {
 }
 
 class NotificationsView(disnake.ui.View):
-    def __init__(self, bot: DisnakeHelper = None, member: disnake.Member = None):
+    def __init__(self, *, bot: DisnakeHelper = None, member: disnake.Member = None):
         super().__init__(timeout=None)
 
         if bot is None:
@@ -75,8 +75,9 @@ class Disnake(commands.Cog, name='disnake'):
     
     async def cog_load(self) -> None:
         if not self.persistant_added:
-            self.notification_view = view = NotificationsView(self.bot)
+            self.notification_view = view = NotificationsView(bot=self.bot)
             self.bot.add_view(view)
+            self.persistant_added = True
     
     def cog_unload(self) -> None:
         self.notification_view.stop()
