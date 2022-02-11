@@ -39,23 +39,18 @@ options = {
 }
 
 class NotificationsView(disnake.ui.View):
-    def __init__(self, *, bot: DisnakeHelper = None, member: disnake.Member = None):
-        super().__init__(timeout=None)
+    def __init__(self, *, member: disnake.Member):
+        super().__init__(timeout=15)
 
-        if bot is None:
-            for role_id, opt in (opts:=options.copy()).items():
-                if role_id in member._roles:
-                    opt.default = True
-
-            self.select_role.options = list(opts.values())
-            self.stop()
-        self.bot = bot
+        for role_id, opt in (opts:=options.copy()).items():
+            if role_id in member._roles:
+                opt.default = True
+        self.select_role.options = list(opts.values())
     
     @disnake.ui.select(
         placeholder='Select roles',
         custom_id='feats:select-role',
-        min_values=0, max_values=2,
-        options=list(options.values())
+        min_values=0, max_values=2
     )
     async def select_role(self, select: disnake.ui.Select, interaction: disnake.MessageInteraction):
         roles = [role_id for role_id in interaction.author._roles if role_id not in (UPDATES_ROLE, NEWS_ROLE)]
@@ -63,24 +58,13 @@ class NotificationsView(disnake.ui.View):
             if int(value) in (UPDATES_ROLE, NEWS_ROLE):
                 roles.append(disnake.Object(int(value)))
         await interaction.author.edit(roles=roles)
-        await interaction.response.edit_message(content="Your roles:"', '.join([f'<@{i}>' for i in select.values]))
+        await interaction.response.edit_message(content="Your roles:"', '.join([f'<@{i}>' for i in select.values]), view=None)
 
 class Disnake(commands.Cog, name='disnake'):
     """Docs and other disnake's guild things."""
 
     def __init__(self, bot: DisnakeHelper):
         self.bot = bot
-        self.notification_view = None
-        self.persistant_added = False
-    
-    async def cog_load(self) -> None:
-        if not self.persistant_added:
-            self.notification_view = view = NotificationsView(bot=self.bot)
-            self.bot.add_view(view)
-            self.persistant_added = True
-    
-    def cog_unload(self) -> None:
-        self.notification_view.stop()
 
     @commands.slash_command()
     async def addbot(
@@ -180,10 +164,15 @@ class Disnake(commands.Cog, name='disnake'):
     async def notifications(self, inter: ApplicationCommandInteraction):
         """Edit your notifications roles"""
 
+        view = NotificationsView(member=inter.author)
+
         await inter.send(
             'Choose which notification roles you want to get',
-            view=NotificationsView(member=inter.author), ephemeral=True
+            view=view, ephemeral=True
         )
+
+        if await view.wait():
+            await inter.edit_original_message(content='You\'re too slow.', view=None)
 
 
 def setup(bot):
