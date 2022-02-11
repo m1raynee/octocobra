@@ -58,7 +58,8 @@ class NotificationsView(disnake.ui.View):
     @disnake.ui.select(
         placeholder='Select roles',
         custom_id='feats:select-role',
-        max_values=2, options=[
+        min_values=0, max_values=2,
+        options=[
             disnake.SelectOption(
                 label='Updates', value=str(UPDATES_ROLE), description='Disnake library updates'
             ),
