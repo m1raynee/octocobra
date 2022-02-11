@@ -60,7 +60,8 @@ class NotificationsView(disnake.ui.View):
     async def select_role(self, select: disnake.ui.Select, interaction: disnake.MessageInteraction):
         roles = [role_id for role_id in interaction.author._roles if role_id not in (UPDATES_ROLE, NEWS_ROLE)]
         for value in select.values:
-            roles.append(disnake.Object(int(value)))
+            if int(value) in (UPDATES_ROLE, NEWS_ROLE):
+                roles.append(disnake.Object(int(value)))
         await interaction.author.edit(roles=roles)
         await interaction.response.edit_message(content="Your roles:"', '.join([f'<@{i}>' for i in select.values]))
 
