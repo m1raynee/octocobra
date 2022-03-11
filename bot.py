@@ -12,8 +12,6 @@ initial_extensions = (
     'cogs.tags',  # cogs
     'cogs.guild_features',
     'cogs.snippets',
-    'cogs.reminder',
-    'cogs.mods',
     'cogs.meta',
     'jishaku',  # community extensions
 )
